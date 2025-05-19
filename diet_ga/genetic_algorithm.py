@@ -73,9 +73,9 @@ class GeneticAlgorithm:
             
             # Define weights for nutrients in fitness function
             weights = {
-                'calories': 1.0, 'protein': 1.2, 'fat': 1.3,
+                'calories': 1.0, 'protein': 1.2, 'fat': 1.8,
                 'carbs': 1.2,     'fiber': 1.2,  'calcium': 1.2,
-                'iron': 1.5
+                'iron': 3.0
             }
             
             # Create fitness evaluator

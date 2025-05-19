@@ -10,12 +10,12 @@ def main():
     # *** Use relative path from the script location
     default_foods_path = os.path.join(os.path.dirname(__file__), 'foods.csv')
     parser.add_argument('--foods', default=default_foods_path)
-    parser.add_argument('--pop', type=int, default=10)
-    parser.add_argument('--gens', type=int, default=10)
-    parser.add_argument('--mut', type=float, default=0.15)
-    parser.add_argument('--final-mut', type=float, default=0.005,
+    parser.add_argument('--pop', type=int, default=1500)
+    parser.add_argument('--gens', type=int, default=90)
+    parser.add_argument('--mut', type=float, default=0.25)
+    parser.add_argument('--final-mut', type=float, default=0.01,
                         help='Final (minimum) mutation rate')
-    parser.add_argument('--retain', type=int, default=800)
+    parser.add_argument('--retain', type=int, default=70)
     parser.add_argument('--cost-cap', type=float, default=4_000_000.0,
                         help='Monthly budget cap in Toman')
     args = parser.parse_args()
