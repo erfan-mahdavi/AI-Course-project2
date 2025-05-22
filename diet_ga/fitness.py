@@ -22,7 +22,7 @@ class FitnessEvaluator:
         min_req: Dict[str, float],
         optimal: Dict[str, float],
         weights: Dict[str, float],
-        cost_cap: float
+        cost_cap: float,
     ):
         self.foods    = foods
         self.min_req  = min_req
@@ -41,7 +41,7 @@ class FitnessEvaluator:
             'protein':  'max',
             'fiber':    'max',
             'calcium':  'max',
-            'iron':     'max'
+            'iron':     'max',
         }
 
     def score_nutrient(
@@ -50,7 +50,7 @@ class FitnessEvaluator:
         min_val: float,
         opt_val: float,
         direction: str,
-        weight: float
+        weight: float,
     ) -> float:
         """
         Score a nutrient value based on its direction and constraints
@@ -187,5 +187,5 @@ class FitnessEvaluator:
             'nutrients_status': status,
             'food_items': self.food_names,
             'food_weights': food_weights,
-            'food_costs': food_costs
+            'food_costs': food_costs,
         }
