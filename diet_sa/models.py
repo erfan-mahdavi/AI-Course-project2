@@ -1,13 +1,13 @@
 """
-Simulated Annealing Models Module
+Models Module for Diet Optimization
 
-This module contains model classes specifically designed for the Simulated Annealing
-approach to diet optimization. Unlike Genetic Algorithm which works with populations,
-Simulated Annealing works with individual solutions that are iteratively improved.
+This module contains model classes used in both Genetic Algorithm and Simulated Annealing
+approaches to diet optimization. The classes are designed to be flexible and work with
+both optimization methods.
 
 Classes:
     FoodItem: Represents a single food item with nutritional data and price
-    Solution: Represents a single diet solution in the SA algorithm
+    Solution: Represents a diet solution with enhanced functionality for SA
 """
 
 import random
@@ -83,19 +83,20 @@ class FoodItem:
         """Detailed string representation for debugging."""
         return f"FoodItem(name='{self.name}', nutrients={self.nutrients}, price={self.price})"
 
+# **************************************************************************************************
 class Solution:
     """
     Represents a single solution in the Simulated Annealing algorithm.
     
     A solution consists of food quantities (kg per month) for each available food item.
-    This is the SA equivalent of an Individual in the Genetic Algorithm, but designed
-    specifically for SA's single-solution iterative improvement approach.
+    This class is designed to work with both GA and SA algorithms, providing enhanced
+    functionality for solution analysis and manipulation.
     
-    Key differences from GA Individual:
-    - Designed for single-solution algorithms (no crossover operations)
+    Key features:
     - Enhanced perturbation methods for neighbor generation
-    - More detailed analysis and reporting methods
-    - Direct fitness evaluation integration
+    - Detailed nutritional analysis capabilities
+    - Cost and budget tracking
+    - Food diversity metrics
     """
     
     def __init__(self, quantities: List[float], evaluator: Callable[['Solution'], float]):
@@ -115,7 +116,7 @@ class Solution:
         """
         Create a random solution with random quantities for each food item.
         
-        This factory method generates initial solutions for the SA algorithm.
+        This factory method generates initial solutions for optimization algorithms.
         It uses reasonable bounds to avoid extreme solutions that would be
         immediately rejected.
         
@@ -138,8 +139,7 @@ class Solution:
             else:
                 # Exponential distribution for realistic quantity distribution
                 qty = min(max_qty, np.random.exponential(scale=max_qty/4))
-        
-        quantities.append(qty)
+            quantities.append(qty)
         
         return cls(quantities, evaluator)
     
@@ -593,7 +593,7 @@ class Solution:
             Formatted table string showing significant food items
         """
         foods = self.evaluator.foods
-        food_names = self.evaluator.food_names
+        food_names = [food.name for food in foods]
         
         # Filter significant foods
         significant_foods = []

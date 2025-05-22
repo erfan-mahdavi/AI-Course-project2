@@ -395,7 +395,7 @@ class Plotter:
         
         # 6. Top Foods
         ax6 = fig.add_subplot(gs[2, 1])
-        food_names = solution.evaluator.food_names
+        food_names = [food.name for food in solution.evaluator.foods]
         top_foods = []
         for i, qty in enumerate(solution.quantities):
             if qty > 0.1:

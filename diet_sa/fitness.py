@@ -1,8 +1,7 @@
 from typing import List, Dict
-import numpy as np
 from tabulate import tabulate
 from colorama import Fore, init
-from .sa_models import Solution
+from .models import Solution
 from .models import FoodItem
 
 # Initialize colorama for colored terminal output
