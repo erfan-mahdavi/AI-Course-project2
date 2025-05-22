@@ -532,9 +532,9 @@ The program will ask you to choose which algorithm to use interactively.
                          help='Initial temperature for SA')
     sa_group.add_argument('--final-temp', type=float, default=0.1,
                          help='Final (minimum) temperature for SA')
-    sa_group.add_argument('--cooling', type=float, default=0.95,
+    sa_group.add_argument('--cooling', type=float, default=0.85,
                          help='Cooling rate for SA (0 < rate < 1)')
-    sa_group.add_argument('--step-size', type=float, default=2.0,
+    sa_group.add_argument('--step-size', type=float, default=1.0,
                          help='Maximum change in food quantity per perturbation (kg)')
     
     args = parser.parse_args()
