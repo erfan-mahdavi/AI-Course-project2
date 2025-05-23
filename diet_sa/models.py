@@ -1,9 +1,9 @@
 """
 Models Module for Diet Optimization
 
-This module contains model classes used in both Genetic Algorithm and Simulated Annealing
-approaches to diet optimization. The classes are designed to be flexible and work with
-both optimization methods.
+This module contains model classes used in Simulated Annealing
+approache to diet optimization. The classes are designed to be flexible and work with
+sa optimization method.
 
 Classes:
     FoodItem: Represents a single food item with nutritional data and price
@@ -21,7 +21,7 @@ class FoodItem:
     Represents a single food item with its nutritional information and price.
     
     This class stores all the necessary information about a food item that
-    both GA and SA algorithms need for optimization, including:
+     SA algorithm need for optimization, including:
     - Nutritional content per 100g
     - Price per kilogram
     - Food name for identification
@@ -40,7 +40,7 @@ class FoodItem:
         self.name = name
         self.nutrients = nutrients  # Nutritional values per 100g
         self.price = price_per_kg   # Price in Toman per kg
-    
+
     def get_nutrient_density(self, nutrient: str) -> float:
         """
         Calculate nutrient density (nutrient per unit cost).
@@ -57,15 +57,6 @@ class FoodItem:
             return 0.0
         return (self.nutrients[nutrient] / self.price) * 1000
     
-    def get_calorie_density(self) -> float:
-        """
-        Calculate caloric density (calories per kg).
-        
-        Returns:
-            Calories per kilogram of this food
-        """
-        return self.nutrients.get('calories', 0) * 10  # Convert per 100g to per kg
-    
     def get_protein_efficiency(self) -> float:
         """
         Calculate protein per unit cost (protein value metric).
@@ -74,11 +65,7 @@ class FoodItem:
             Grams of protein per 1000 Toman
         """
         return self.get_nutrient_density('protein')
-    
-    def __str__(self) -> str:
-        """String representation of the food item."""
-        return f"FoodItem({self.name}, {self.price:,}T/kg)"
-    
+
     def __repr__(self) -> str:
         """Detailed string representation for debugging."""
         return f"FoodItem(name='{self.name}', nutrients={self.nutrients}, price={self.price})"
@@ -89,7 +76,7 @@ class Solution:
     Represents a single solution in the Simulated Annealing algorithm.
     
     A solution consists of food quantities (kg per month) for each available food item.
-    This class is designed to work with both GA and SA algorithms, providing enhanced
+    This class is designed to work with SA algorithm, providing enhanced
     functionality for solution analysis and manipulation.
     
     Key features:
@@ -111,6 +98,7 @@ class Solution:
         self.evaluator = evaluator           # Fitness evaluation function
         self.fitness = evaluator(self)       # Calculate initial fitness score
     
+    # used
     @classmethod
     def random_solution(cls, num_foods: int, evaluator: Callable, max_qty: float = 30.0) -> 'Solution':
         """
@@ -143,6 +131,7 @@ class Solution:
         
         return cls(quantities, evaluator)
     
+    # not used
     @classmethod
     def from_food_priorities(cls, num_foods: int, evaluator: Callable, 
                            food_priorities: List[float] = None) -> 'Solution':
@@ -222,10 +211,6 @@ class Solution:
             # Apply random change within step_size bounds
             change = random.uniform(-step_size, step_size)
             new_quantities[idx] = max(0.0, new_quantities[idx] + change)
-            
-            # Occasionally set to zero (helps remove unnecessary foods)
-            if random.random() < 0.1:
-                new_quantities[idx] = 0.0
             
             # Occasionally set to a completely new random value (exploration)
             if random.random() < 0.05:
@@ -440,24 +425,6 @@ class Solution:
         monthly_totals = self.get_nutrient_totals()
         return {nut: total / 30 for nut, total in monthly_totals.items()}
     
-    def is_within_budget(self) -> bool:
-        """
-        Check if this solution is within the specified budget.
-        
-        Returns:
-            True if solution cost is within budget, False otherwise
-        """
-        return self.get_total_cost() <= self.evaluator.cost_cap
-    
-    def get_budget_utilization(self) -> float:
-        """
-        Calculate what percentage of the budget this solution uses.
-        
-        Returns:
-            Budget utilization as a percentage (0.0 to 100.0+)
-        """
-        return (self.get_total_cost() / self.evaluator.cost_cap) * 100
-    
     def get_detailed_nutritional_analysis(self) -> Dict:
         """
         Get a comprehensive nutritional analysis of this solution.
@@ -469,27 +436,6 @@ class Solution:
             Dictionary with detailed nutritional analysis
         """
         return self.evaluator.get_detailed_analysis(self)
-    
-    def meets_minimum_requirements(self) -> bool:
-        """
-        Check if this solution meets all minimum nutritional requirements.
-        
-        Returns:
-            True if all minimum requirements are met, False otherwise
-        """
-        daily_nutrients = self.get_daily_nutrient_totals()
-        min_daily = {nut: req/30 for nut, req in self.evaluator.min_req.items()}
-        directions = self.evaluator.directions
-        
-        for nut, actual in daily_nutrients.items():
-            minimum = min_daily[nut]
-            direction = directions.get(nut, 'max')
-            
-            # For 'max' nutrients, check if we meet minimum
-            if direction == 'max' and actual < minimum:
-                return False
-        
-        return True
     
     def get_deficient_nutrients(self) -> List[str]:
         """
@@ -511,123 +457,6 @@ class Solution:
                 deficient.append(nut)
         
         return deficient
-    
-    def get_food_diversity_score(self) -> float:
-        """
-        Calculate a diversity score based on how many different foods are used.
-        
-        Higher diversity is generally better for nutritional completeness
-        and meal variety.
-        
-        Returns:
-            Diversity score (0.0 to 1.0, higher is more diverse)
-        """
-        # Count foods with significant quantities
-        significant_foods = sum(1 for qty in self.quantities if qty > 0.1)
-        total_foods = len(self.quantities)
-        
-        if total_foods == 0:
-            return 0.0
-        
-        # Basic diversity metric
-        basic_diversity = significant_foods / total_foods
-        
-        # Calculate Shannon entropy for more sophisticated diversity measure
-        total_weight = self.get_total_weight()
-        if total_weight <= 0:
-            return basic_diversity
-        
-        entropy = 0.0
-        for qty in self.quantities:
-            if qty > 0:
-                proportion = qty / total_weight
-                entropy -= proportion * math.log(proportion)
-        
-        # Normalize entropy (maximum entropy is log(n) where n is number of foods)
-        max_entropy = math.log(total_foods)
-        normalized_entropy = entropy / max_entropy if max_entropy > 0 else 0
-        
-        # Combine basic diversity and entropy
-        return (basic_diversity + normalized_entropy) / 2
-    
-    def format_solution_summary(self) -> str:
-        """
-        Create a formatted string summary of this solution.
-        
-        Returns:
-            Multi-line string with solution overview
-        """
-        lines = []
-        lines.append("="*60)
-        lines.append("SOLUTION SUMMARY")
-        lines.append("="*60)
-        
-        # Basic metrics
-        total_cost = self.get_total_cost()
-        total_weight = self.get_total_weight()
-        budget_utilization = self.get_budget_utilization()
-        
-        lines.append(f"Fitness Score: {self.fitness:.2f}")
-        lines.append(f"Total Cost: {total_cost:,.0f} Toman ({budget_utilization:.1f}% of budget)")
-        lines.append(f"Total Weight: {total_weight:.2f} kg")
-        lines.append(f"Budget Status: {'WITHIN BUDGET' if self.is_within_budget() else 'OVER BUDGET'}")
-        lines.append(f"Food Diversity: {self.get_food_diversity_score():.2f}")
-        
-        # Nutritional status
-        daily_nutrients = self.get_daily_nutrient_totals()
-        deficient = self.get_deficient_nutrients()
-        
-        lines.append(f"\nNutritional Status:")
-        lines.append(f"Meets minimums: {'YES' if self.meets_minimum_requirements() else 'NO'}")
-        if deficient:
-            lines.append(f"Deficient nutrients: {', '.join(deficient)}")
-        
-        lines.append("="*60)
-        return "\n".join(lines)
-    
-    def format_food_basket_table(self) -> str:
-        """
-        Format the food basket in a readable table format.
-        
-        Returns:
-            Formatted table string showing significant food items
-        """
-        foods = self.evaluator.foods
-        food_names = [food.name for food in foods]
-        
-        # Filter significant foods
-        significant_foods = []
-        for i, qty in enumerate(self.quantities):
-            if qty > 0.01:  # More than 10g monthly
-                name = food_names[i]
-                daily_grams = (qty * 1000) / 30
-                monthly_cost = qty * foods[i].price
-                significant_foods.append([name, qty, daily_grams, monthly_cost])
-        
-        if not significant_foods:
-            return "No significant food items in this solution."
-        
-        # Sort by quantity (descending)
-        significant_foods.sort(key=lambda x: x[1], reverse=True)
-        
-        # Create table data
-        table_data = []
-        for name, qty, daily_g, cost in significant_foods:
-            table_data.append([
-                name,
-                f"{qty:.2f}",
-                f"{daily_g:.1f}",
-                f"{cost:,.0f}"
-            ])
-        
-        headers = ["Food Item", "Monthly (kg)", "Daily (g)", "Cost (Toman)"]
-        return tabulate.tabulate(table_data, headers=headers, tablefmt="grid")
-    
-    def __str__(self) -> str:
-        """Brief string representation of the solution."""
-        cost = self.get_total_cost()
-        weight = self.get_total_weight()
-        return f"Solution(fitness={self.fitness:.2f}, cost={cost:,.0f}T, weight={weight:.1f}kg)"
     
     def __repr__(self) -> str:
         """Detailed string representation for debugging."""
