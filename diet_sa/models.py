@@ -40,6 +40,16 @@ class Solution:
         self.quantities = self._validate_quantities(quantities.copy())
         self.evaluator = evaluator
         self.fitness = evaluator(self)
+
+        self.directions = {
+            'calories': 'min',
+            'fat':      'min',
+            'carbs':    'min',
+            'protein':  'max',
+            'fiber':    'max',
+            'calcium':  'max',
+            'iron':     'max',
+        }
     
     def _validate_quantities(self, quantities: List[float]) -> List[float]:
         """Ensure quantities are within realistic bounds."""
@@ -290,6 +300,19 @@ class Solution:
         """Recalculate fitness after modifying quantities."""
         self.fitness = self.evaluator(self)
     
+    def _reduce_cost_neighbor(self, foods, step_size):
+        """Generate neighbor by reducing expensive foods."""
+        new_quantities = self.quantities.copy()
+        qty_dict = {col.name:qty for col, qty in zip(foods,new_quantities)}
+
+        expensive = sorted(foods,key=lambda x : x.price,reverse=True)
+        for food in expensive[:10]:
+            reduction = random.uniform(0, step_size)
+            qty_dict[food.name] = max(0.0, qty_dict[food.name] - reduction)
+        
+        new_quantities = [qty for qty in qty_dict.values()]
+        return Solution(new_quantities, self.evaluator)
+
     def perturb_simple(self, step_size: float = 1.5) -> 'Solution':
         """
         Create neighbor by simple random perturbation.
@@ -307,7 +330,7 @@ class Solution:
             new_quantities[idx] = max(0.0, new_quantities[idx] + change)
             
             # Small chance to set to zero or random value
-            if random.random() < 0.1:
+            if random.uniform(0,1) < 0.1:
                 if random.random() < 0.5:
                     new_quantities[idx] = 0.0
                 else:
@@ -315,47 +338,57 @@ class Solution:
         
         return Solution(new_quantities, self.evaluator)
     
-    def perturb_focused(self, target_nutrient: str = None) -> 'Solution':
+    def perturb_focused(self, deficient_nutrients, step_size) -> 'Solution':
         """
         Create neighbor by focusing on a specific nutrient deficiency.
         """
         new_quantities = self.quantities.copy()
         
-        if target_nutrient is None:
-            # Find most deficient nutrient
-            daily_nutrients = self.get_daily_nutrient_totals()
-            min_daily = {nut: req/30 for nut, req in self.evaluator.min_req.items()}
-            
-            max_deficit = 0
-            target_nutrient = 'protein'  # default
-            for nut, actual in daily_nutrients.items():
-                deficit = (min_daily[nut] - actual) / min_daily[nut]
-                if deficit > max_deficit:
-                    max_deficit = deficit
-                    target_nutrient = nut
-        
-        # Find good sources of target nutrient
-        foods = self.evaluator.foods
-        nutrient_sources = []
-        for i, food in enumerate(foods):
-            if target_nutrient in food.nutrients:
-                density = food.get_nutrient_density(target_nutrient)
-                nutrient_sources.append((i, density))
-        
-        # Sort by nutrient density
-        nutrient_sources.sort(key=lambda x: x[1], reverse=True)
-        
-        # Increase top 2 sources
-        for idx, _ in nutrient_sources[:2]:
-            increase = random.uniform(0.2, 1.0)
-            new_quantities[idx] += increase
-        
-        # Decrease 1-2 random foods slightly
-        for _ in range(random.randint(1, 2)):
-            idx = random.randint(0, len(new_quantities) - 1)
-            if new_quantities[idx] > 0.5:
-                decrease = random.uniform(0.1, 0.5)
-                new_quantities[idx] -= decrease
+        for nut in deficient_nutrients:
+            if nut[1]=='decrease':
+                # Find good sources of target nutrient
+                target_nutrient = nut[0]
+                foods = self.evaluator.foods
+                nutrient_sources = []
+                for i, food in enumerate(foods):
+                    if target_nutrient in food.nutrients:
+                        density = food.get_nutrient_density(target_nutrient)
+                        nutrient_sources.append((i, density))
+                
+                # Sort by nutrient density
+                nutrient_sources.sort(key=lambda x: x[1], reverse=True)
+
+                # Increase top 2 sources
+                for idx, _ in nutrient_sources[:2]:
+                    increase = random.uniform(0,step_size)
+                    new_quantities[idx] += increase
+                
+                # Decrease 1-2 random foods slightly
+                res_idx = [x[0] for x in nutrient_sources]
+                for _ in range(random.randint(1, 2)):
+                    idx = random.choice(res_idx[:5])
+                    decrease = random.uniform(0, step_size)
+                    new_quantities[idx] -= decrease
+
+            elif nut[1]=='increase':
+                # Find good sources of target nutrient
+                target_nutrient = nut[0]
+                foods = self.evaluator.foods
+                nutrient_sources = []
+                for i, food in enumerate(foods):
+                    if target_nutrient in food.nutrients:
+                        density = food.get_nutrient_density(target_nutrient)
+                        nutrient_sources.append((i, density))
+                
+                # Sort by nutrient density
+                nutrient_sources.sort(key=lambda x: x[1])
+
+                # Increase 1-2 random foods slightly
+                res_idx = [x[0] for x in nutrient_sources]
+                for _ in range(random.randint(1, 2)):
+                    idx = random.choice(res_idx[:5])
+                    increase = random.uniform(0, step_size)
+                    new_quantities[idx] += increase
         
         return Solution(new_quantities, self.evaluator)
     
@@ -384,14 +417,26 @@ class Solution:
         return {nut: total / 30 for nut, total in monthly_totals.items()}
     
     def get_deficient_nutrients(self) -> List[str]:
-        """Get list of nutrients below minimum requirements."""
+        """Get list of nutrients not satisfy requirements."""
         daily_nutrients = self.get_daily_nutrient_totals()
         min_daily = {nut: req/30 for nut, req in self.evaluator.min_req.items()}
+        opt_daily = {nut: req/30 for nut, req in self.evaluator.optimal.items()}
         
         deficient = []
-        for nut, actual in daily_nutrients.items():
-            if actual < min_daily[nut]:
-                deficient.append(nut)
+        for nutrient, actual in daily_nutrients.items():
+            if self.directions[nutrient]=='max':
+                if not (opt_daily[nutrient] > actual > min_daily[nutrient]):
+                    if actual<min_daily[nutrient]:
+                        deficient.append((nutrient,'increase'))
+                    elif actual>opt_daily[nutrient]:
+                        deficient.append((nutrient,'decrease'))
+
+            else:
+                if not (opt_daily[nutrient] < actual < min_daily[nutrient]):
+                    if actual>min_daily[nutrient]:
+                        deficient.append((nutrient,'decrease'))
+                    elif actual<opt_daily[nutrient]:
+                        deficient.append((nutrient,'increase'))
         
         return deficient
     

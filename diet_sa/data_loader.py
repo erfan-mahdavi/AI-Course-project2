@@ -91,7 +91,7 @@ class DataLoader:
             # Print summary of loaded data
             DataLoader.print_food_summary(items)
             
-            return items
+            return items,df.columns
                 
         except FileNotFoundError as e:
             print(f"{Fore.RED}Error: {e}")

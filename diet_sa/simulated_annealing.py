@@ -22,7 +22,7 @@ class SimulatedAnnealing:
         step_size: float = 1.5,         
     ):
         # Load food data
-        foods = DataLoader.load_foods(csv_path)
+        foods, columns = DataLoader.load_foods(csv_path)
         
         # Monthly nutritional requirements
         daily_requirements = {
@@ -38,13 +38,13 @@ class SimulatedAnnealing:
         
         # Optimal targets - these are what Lili really wants for best health
         optimal_daily = {
-            'calories': 1800,   # Less calories for weight management 
-            'protein': 110,     # More protein for muscle strength
-            'fat': 55,          # Less fat for healthy diet
-            'carbs': 225,       # Less carbs to control sugar intake
-            'fiber': 30,        # More fiber for digestion
-            'calcium': 1100,    # More calcium for strong bones
-            'iron': 20,         # More iron to prevent anemia
+            'calories': 1700,   # Less calories for weight management 
+            'protein': 120,     # More protein for muscle strength
+            'fat': 45,          # Less fat for healthy diet
+            'carbs': 235,       # Less carbs to control sugar intake
+            'fiber': 35,        # More fiber for digestion
+            'calcium': 1200,    # More calcium for strong bones
+            'iron': 25,         # More iron to prevent anemia
         }
         optimal = {nut: val * 30 for nut, val in optimal_daily.items()}
         
@@ -70,6 +70,7 @@ class SimulatedAnnealing:
         self.cooling_rate = cooling_rate
         self.cost_cap = cost_cap
         self.step_size = step_size
+        self.columns = columns
         
         # Store requirements for reporting
         self.min_daily = daily_requirements
@@ -96,44 +97,18 @@ class SimulatedAnnealing:
 
     def generate_neighbor(self, current_solution: Solution) -> Solution:
         """
-        Generate neighbor solution using simplified strategy.
+        Generate neighbor solution using multiple strategies.
         """
         current_cost = current_solution.get_total_cost()
         deficient_nutrients = current_solution.get_deficient_nutrients()
         
         # Choose strategy based on current state
-        if current_cost > self.cost_cap * 0.9:  # Near budget limit
-            return self._reduce_cost_neighbor(current_solution)
+        if current_cost >= self.cost_cap * 0.95:  # Near budget limit
+            return current_solution._reduce_cost_neighbor(self.foods.copy(), self.step_size)
         elif len(deficient_nutrients) > 0:  # Has deficiencies
-            target_nutrient = deficient_nutrients[0]  # Focus on worst deficiency
-            return current_solution.perturb_focused(target_nutrient)
+            return current_solution.perturb_focused(deficient_nutrients, self.step_size)
         else:  # Normal case
             return current_solution.perturb_simple(self.step_size)
-
-    def _reduce_cost_neighbor(self, solution: Solution) -> Solution:
-        """Generate neighbor by reducing expensive foods."""
-        new_quantities = solution.quantities.copy()
-        
-        # Find expensive foods with significant quantities
-        expensive_indices = []
-        for i, (qty, food) in enumerate(zip(new_quantities, self.foods)):
-            if qty > 0.5 and food.price > 150000:
-                expensive_indices.append(i)
-        
-        # Reduce expensive foods
-        if expensive_indices:
-            for idx in expensive_indices[:2]:  # Top 2 most expensive
-                reduction = random.uniform(0.2, min(1.0, new_quantities[idx] * 0.4))
-                new_quantities[idx] = max(0.0, new_quantities[idx] - reduction)
-        
-        # Increase some cheaper alternatives
-        cheap_indices = [i for i, food in enumerate(self.foods) if food.price < 100000]
-        if cheap_indices:
-            for idx in random.sample(cheap_indices, min(2, len(cheap_indices))):
-                increase = random.uniform(0.1, 0.8)
-                new_quantities[idx] += increase
-        
-        return Solution(new_quantities, self.evaluator)
 
     def acceptance_probability(self, current_fitness: float, new_fitness: float, temperature: float) -> float:
         """Calculate acceptance probability."""
@@ -153,7 +128,7 @@ class SimulatedAnnealing:
         Check multiple stopping conditions and return whether to stop and why.
         """
         # Don't stop too early - allow at least 1000 iterations
-        if iteration < 1000:
+        if iteration < 350:
             return False, ""
         
         # 1. Temperature-based stopping
@@ -182,11 +157,7 @@ class SimulatedAnnealing:
             if fitness_variance < 0.01:  # Very small variance in fitness
                 return True, f"Converged - fitness variance: {fitness_variance:.6f}"
         
-        # 6. Extremely low acceptance rate
-        if iteration > 1500 and acceptance_rate < 0.1:
-            return True, f"Acceptance rate too low ({acceptance_rate:.3f}%)"
-        
-        # 7. Check if we've reached a good enough solution
+        # 6. Check if we've reached a good enough solution
         if self.best_fitness_history and iteration > 2000:
             current_best = max(self.best_fitness_history)
             # If fitness is positive and high, we might have found a good solution
@@ -245,7 +216,7 @@ class SimulatedAnnealing:
             total_moves += 1
             
             # Accept or reject
-            if random.random() < accept_prob:
+            if random.uniform(0,1) < accept_prob:
                 current_solution = neighbor
                 accepted_moves += 1
                 consecutive_no_accept = 0

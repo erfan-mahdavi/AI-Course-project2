@@ -69,35 +69,36 @@ class FitnessEvaluator:
             if self.directions[nutrient]=='max':
                 if actual[nutrient] < self.min_req[nutrient]:
                     excess_calories = self.min_req[nutrient] - actual[nutrient]
-                    calorie_penalty = (excess_calories / self.min_req[nutrient]) * 400 * self.weights.get(nutrient,1.0)
+                    calorie_penalty = (excess_calories / self.min_req[nutrient]) * 4 * self.weights.get(nutrient,1.0)
                     fitness -= calorie_penalty
                 else:
                     excess_calories = actual[nutrient] - self.optimal[nutrient]  
                     if excess_calories < 0:
-                        calorie_penalty = (-excess_calories / self.optimal[nutrient]) * 300 * self.weights.get(nutrient,1.0)
+                        calorie_penalty = (-excess_calories / self.optimal[nutrient]) * 3 * self.weights.get(nutrient,1.0)
                         fitness += calorie_penalty
                     else:
-                        calorie_penalty = (excess_calories / self.optimal[nutrient]) * 200 * self.weights.get(nutrient,1.0)
+                        calorie_penalty = (excess_calories / self.optimal[nutrient]) * 2 * self.weights.get(nutrient,1.0)
                         fitness -= calorie_penalty
             else:
                 if actual[nutrient] > self.min_req[nutrient]:
                     excess_calories = actual[nutrient] - self.min_req[nutrient]
-                    calorie_penalty = (excess_calories / self.min_req[nutrient]) * 200 * self.weights.get(nutrient,1.0)
+                    calorie_penalty = (excess_calories / self.min_req[nutrient]) * 2 * self.weights.get(nutrient,1.0)
                     fitness -= calorie_penalty
                 else:
                     excess_calories = actual[nutrient] - self.optimal[nutrient]  
                     if excess_calories > 0:
-                        calorie_penalty = (excess_calories / self.optimal[nutrient]) * 300 * self.weights.get(nutrient,1.0)
+                        calorie_penalty = (excess_calories / self.optimal[nutrient]) * 3 * self.weights.get(nutrient,1.0)
                         fitness += calorie_penalty
                     else:
-                        calorie_penalty = (-excess_calories / self.optimal[nutrient]) * 400 * self.weights.get(nutrient,1.0)
+                        calorie_penalty = (-excess_calories / self.optimal[nutrient]) * 4 * self.weights.get(nutrient,1.0)
                         fitness -= calorie_penalty
         
         
         # 3. Cost efficiency bonus - reward for staying under budget
-        if total_cost <= self.cost_cap:
-            cost_efficiency = ((self.cost_cap - total_cost) / self.cost_cap) * 200
+        if 2000000.0 <= total_cost <= self.cost_cap:
+            cost_efficiency = ((self.cost_cap - total_cost) / self.cost_cap) * 20
             fitness += cost_efficiency
+        
         
         return fitness
         

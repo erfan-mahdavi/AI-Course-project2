@@ -62,32 +62,6 @@ def find_foods_file(provided_path: str) -> str:
     """Find the foods.csv file in various locations."""
     if os.path.exists(provided_path):
         return provided_path
-    
-    possible_paths = [
-        'foods.csv',
-        os.path.join('data', 'foods.csv'),
-        os.path.join(os.path.dirname(__file__), 'foods.csv'),
-        os.path.join(os.path.dirname(__file__), 'data', 'foods.csv'),
-        os.path.join(os.path.dirname(os.path.dirname(__file__)), 'foods.csv'),
-        os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'foods.csv'),
-    ]
-    
-    for path in possible_paths:
-        if os.path.exists(path):
-            print(f"Found foods.csv at: {path}")
-            return path
-    
-    print(f"Error: File '{provided_path}' not found!")
-    print(f"Current directory: {os.getcwd()}")
-    
-    try:
-        available_files = [f for f in os.listdir('.') if f.endswith('.csv')]
-        if available_files:
-            print(f"Available CSV files: {', '.join(available_files)}")
-    except:
-        pass
-    
-    raise FileNotFoundError(f"Could not find foods.csv file")
 
 def run_genetic_algorithm(args) -> Tuple[List[float], float, float, Dict[str, float], float, Any]:
     """Run the Genetic Algorithm with given parameters."""
@@ -339,15 +313,15 @@ Algorithm Information:
     
     # SA arguments
     sa_group = parser.add_argument_group('Simulated Annealing Options')
-    sa_group.add_argument('--iterations', type=int, default=880,
+    sa_group.add_argument('--iterations', type=int, default=900,
                          help='Maximum iterations for SA')
-    sa_group.add_argument('--temp', type=float, default=1000000.0,
+    sa_group.add_argument('--temp', type=float, default=9000000.0,
                          help='Initial temperature for SA')
     sa_group.add_argument('--final-temp', type=float, default=0.001,
                          help='Final temperature for SA')
     sa_group.add_argument('--cooling', type=float, default=0.9,
                          help='Cooling rate for SA')
-    sa_group.add_argument('--step-size', type=float, default=1.0,
+    sa_group.add_argument('--step-size', type=float, default=1.5,
                          help='Step size for SA (kg)')
     
     args = parser.parse_args()
