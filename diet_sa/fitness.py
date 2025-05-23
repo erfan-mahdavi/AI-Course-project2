@@ -9,7 +9,7 @@ init(autoreset=True)
 
 class FitnessEvaluator:
     """
-    Fitness evaluation class specifically designed for Simulated Annealing diet optimization.
+    Fitness evaluation class .
     
     This class implements a sophisticated piecewise nutrient-direction fitness function
     that evaluates SA solutions based on:
@@ -63,12 +63,6 @@ class FitnessEvaluator:
             'calcium':  'max',    # Maximize calcium for bone health
             'iron':     'max',    # Maximize iron for blood health
         }
-        
-        # Validation: ensure all nutrients have defined directions
-        for nutrient in min_req.keys():
-            if nutrient not in self.directions:
-                print(f"{Fore.YELLOW}Warning: No direction defined for nutrient '{nutrient}'. Using 'max' as default.")
-                self.directions[nutrient] = 'max'
 
     def score_nutrient(
         self,
@@ -147,7 +141,7 @@ class FitnessEvaluator:
                 
         else:  # 'target' direction
             # For nutrients that should hit a specific target value
-            # Use quadratic penalty to encourage precision around the target
+            # we use quadratic penalty to encourage precision around the target
             deviation = abs(actual_val - opt_val)
             band_reward = -weight * (deviation ** 2) / (opt_val ** 2)
 
