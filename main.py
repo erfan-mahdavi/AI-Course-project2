@@ -526,15 +526,15 @@ The program will ask you to choose which algorithm to use interactively.
     
     # Simulated Annealing arguments
     sa_group = parser.add_argument_group('Simulated Annealing Options')
-    sa_group.add_argument('--iterations', type=int, default=10000,
+    sa_group.add_argument('--iterations', type=int, default=400,
                          help='Maximum number of iterations for SA')
-    sa_group.add_argument('--temp', type=float, default=1000.0,
+    sa_group.add_argument('--temp', type=float, default=20000.0,
                          help='Initial temperature for SA')
-    sa_group.add_argument('--final-temp', type=float, default=0.1,
+    sa_group.add_argument('--final-temp', type=float, default=0.01,
                          help='Final (minimum) temperature for SA')
-    sa_group.add_argument('--cooling', type=float, default=0.85,
+    sa_group.add_argument('--cooling', type=float, default=0.95,
                          help='Cooling rate for SA (0 < rate < 1)')
-    sa_group.add_argument('--step-size', type=float, default=1.0,
+    sa_group.add_argument('--step-size', type=float, default=2.0,
                          help='Maximum change in food quantity per perturbation (kg)')
     
     args = parser.parse_args()

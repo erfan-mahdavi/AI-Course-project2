@@ -6,7 +6,6 @@ from typing import List, Dict, Tuple
 import numpy as np
 import math
 import random
-import os
 
 class SimulatedAnnealing:
     """
@@ -19,10 +18,10 @@ class SimulatedAnnealing:
     def __init__(
         self,
         csv_path: str,
-        max_iterations: int = 10000,
-        initial_temp: float = 1000.0,
-        final_temp: float = 0.1,
-        cooling_rate: float = 0.95,
+        max_iterations: int = 15000,
+        initial_temp: float = 2000.0,
+        final_temp: float = 0.01,
+        cooling_rate: float = 0.99,
         cost_cap: float = 4_000_000.0,
         step_size: float = 2.0,
     ):
@@ -38,88 +37,68 @@ class SimulatedAnnealing:
             cost_cap: Maximum cost constraint in Toman
             step_size: Maximum change in food quantity per perturbation (kg)
         """
-        try:
-            # Check if file exists, try alternative paths if needed
-            if not os.path.exists(csv_path):
-                print(f"Warning: File '{csv_path}' not found. Checking for alternative paths...")
-                alt_paths = [
-                    os.path.join(os.path.dirname(__file__), 'foods.csv'),
-                    os.path.join(os.path.dirname(os.path.dirname(__file__)), 'foods.csv')
-                ]
-                for path in alt_paths:
-                    if os.path.exists(path):
-                        print(f"Found alternative file at '{path}'")
-                        csv_path = path
-                        break
-                else:
-                    raise FileNotFoundError(f"Could not find 'foods.csv' in any of the expected locations.")
-                
-            # Load food data
-            foods = DataLoader.load_foods(csv_path)
-            gene_count = len(foods)
-            
-            if gene_count == 0:
-                raise ValueError("No food items were loaded from the CSV file.")
 
-            # Define daily nutritional requirements (same as GA)
-            daily = {
-                'calories': 2000, 'protein': 100, 'fat': 60,
-                'carbs': 250,     'fiber': 25,  'calcium': 1000,
-                'iron': 18,
-            }
-            
-            # Convert to monthly requirements
-            min_req = {nut: val * 30 for nut, val in daily.items()}
-            
-            # Define optimal values (per month) - same as GA
-            optimal = {
-                'calories': 1700*30, 'protein': 140*30, 'fat': 45*30,
-                'carbs': 210*30,     'fiber': 35*30,  'calcium': 1200*30,
-                'iron': 23*30,
-            }
-            
-            # Define weights for nutrients in fitness function - same as GA
-            weights = {
+        # Load food data
+        foods = DataLoader.load_foods(csv_path)
+        food_count = len(foods)
+
+        daily = {
+            'calories': 2000, 'protein': 100, 'fat': 60,
+            'carbs': 250,     'fiber': 25,  'calcium': 1000,
+            'iron': 18,
+        }
+
+        min_req = {
+            'calories': 2000*30, 'protein': 100*30, 'fat': 60*30,
+            'carbs': 250*30,     'fiber': 25*30,  'calcium': 1000*30,
+            'iron': 18*30,
+        }
+        
+        # Define optimal values (per month)
+        optimal = {
+            'calories': 1700*30, 'protein': 140*30, 'fat': 45*30,
+            'carbs': 210*30,     'fiber': 35*30,  'calcium': 1200*30,
+            'iron': 23*30,
+        }
+        
+        weights = {
                 'calories': 1.0, 'protein': 1.2, 'fat': 1.8,
                 'carbs': 1.2,     'fiber': 1.2,  'calcium': 1.2,
-                'iron': 3.0,
+                'iron': 3.0
             }
-            
-            # Create fitness evaluator (reuse the same one from GA)
-            self.evaluator = FitnessEvaluator(
-                foods, min_req, optimal, weights, cost_cap,
-            )
-            
-            # Store algorithm parameters
-            self.foods = foods
-            self.gene_count = gene_count
-            self.max_iterations = max_iterations
-            self.initial_temp = initial_temp
-            self.final_temp = final_temp
-            self.cooling_rate = cooling_rate
-            self.cost_cap = cost_cap
-            self.step_size = step_size
-            
-            # Store nutritional requirements for reporting
-            self.min_daily = daily
-            self.optimal_daily = {nut: ov/30 for nut, ov in optimal.items()}
-            
-            # Initialize tracking variables
-            self.temp_history = []
-            self.fitness_history = []
-            self.cost_history = []
-            self.acceptance_history = []
-            self.nut_history = {nut: [] for nut in daily if nut != 'calories'}
-            
-            # Create plotter instance
-            self.plotter = Plotter()
-            
-            # Print available food items
-            self.print_foods_details()
-            
-        except Exception as e:
-            print(f"Error initializing Simulated Annealing: {e}")
-            raise
+        
+        # Create fitness evaluator
+        self.evaluator = FitnessEvaluator(
+            foods, min_req, optimal, weights, cost_cap,
+        )
+        
+        # Store algorithm parameters
+        self.foods = foods
+        self.food_count = food_count
+        self.max_iterations = max_iterations
+        self.initial_temp = initial_temp
+        self.final_temp = final_temp
+        self.cooling_rate = cooling_rate
+        self.cost_cap = cost_cap
+        self.step_size = step_size
+        self.weights = weights
+        self.min_daily = daily
+        
+        # Store nutritional requirements for reporting
+        self.optimal_daily = {nut: ov/30 for nut, ov in min_req.items()}
+        
+        # Initialize tracking variables
+        self.temp_history = []
+        self.fitness_history = []
+        self.cost_history = []
+        self.acceptance_history = []
+        self.nut_history = {nut: [] for nut in daily if nut != 'calories'}
+        
+        # Create plotter instance
+        self.plotter = Plotter()
+        
+        # Print available food items
+        self.print_foods_details()
             
     def print_foods_details(self):
         """
@@ -154,37 +133,8 @@ class SimulatedAnnealing:
         Returns:
             A strategically generated Solution object
         """
-        # Calculate food priorities based on nutritional value and cost
-        food_priorities = []
-        for food in self.foods:
-            # Calculate composite nutritional score
-            protein_density = food.get_protein_efficiency()  # g protein per 1000 Toman
-            calorie_cost = food.nutrients['calories'] / food.price * 1000 if food.price > 0 else 0
-            
-            # Composite score considering multiple factors
-            priority = (
-                protein_density * 0.4 +         # Protein efficiency
-                calorie_cost * 0.001 +          # Calorie cost efficiency
-                food.nutrients['fiber'] * 0.1 + # Fiber content
-                food.nutrients['iron'] * 0.5    # Iron content
-            ) / food.price * 100000 if food.price > 0 else 0
-            
-            food_priorities.append(priority)
-        
-        # Generate quantities based on priorities
-        quantities = []
-        for i, priority in enumerate(food_priorities):
-            if priority > 0:
-                # Higher priority foods get higher base quantities
-                base_qty = min(15.0, priority * random.uniform(0.5, 1.5))
-                # Add randomness but keep non-negative
-                qty = max(0, base_qty + random.uniform(-2, 2))
-            else:
-                # Low priority foods get smaller random quantities
-                qty = random.uniform(0, 5.0) if random.random() < 0.3 else 0.0
-            quantities.append(qty)
-        
-        return Solution(quantities, self.evaluator)
+
+        return Solution.random_solution(self.food_count, self.evaluator)
 
     def generate_neighbor(self, current_solution: Solution) -> Solution:
         """
@@ -348,8 +298,8 @@ class SimulatedAnnealing:
                 acceptance_rate = (accepted_moves / total_moves) * 100 if total_moves > 0 else 0
                 self.acceptance_history.append(acceptance_rate)
                 
-                # Print progress every 500 iterations or at key milestones
-                if iteration % 500 == 0 or iteration == self.max_iterations - 1:
+                # Print progress every 200 iterations or at key milestones
+                if iteration % 200 == 0 or iteration == self.max_iterations - 1:
                     print(f"{iteration:6d}|{temperature:8.2f}|{current_solution.fitness:12.2f}|{best_solution.fitness:12.2f}|"
                           f"{cost:15,.0f}|{acceptance_rate:6.1f}|{nutrients['calories']:8.1f}|{nutrients['protein']:8.1f}|{nutrients['fat']:8.1f}")
                 

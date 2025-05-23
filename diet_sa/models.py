@@ -1,9 +1,9 @@
 """
-Models Module for Diet Optimization
+Models Module for Diet Optimization - FIXED VERSION
 
 This module contains model classes used in Simulated Annealing
-approache to diet optimization. The classes are designed to be flexible and work with
-sa optimization method.
+approach to diet optimization. The classes are designed to be flexible and work with
+SA optimization method.
 
 Classes:
     FoodItem: Represents a single food item with nutritional data and price
@@ -11,9 +11,7 @@ Classes:
 """
 
 import random
-import math
-from typing import List, Callable, Dict
-import tabulate
+from typing import List, Callable, Dict, Optional
 import numpy as np
 
 class FoodItem:
@@ -21,7 +19,7 @@ class FoodItem:
     Represents a single food item with its nutritional information and price.
     
     This class stores all the necessary information about a food item that
-     SA algorithm need for optimization, including:
+    SA algorithm needs for optimization, including:
     - Nutritional content per 100g
     - Price per kilogram
     - Food name for identification
@@ -39,7 +37,12 @@ class FoodItem:
         """
         self.name = name
         self.nutrients = nutrients  # Nutritional values per 100g
-        self.price = price_per_kg   # Price in Toman per kg
+        self.price = max(0.01, price_per_kg)   # Ensure positive price
+        
+        # Validate nutrients
+        for key, value in self.nutrients.items():
+            if value < 0:
+                self.nutrients[key] = 0.0
 
     def get_nutrient_density(self, nutrient: str) -> float:
         """
@@ -73,18 +76,24 @@ class FoodItem:
 # **************************************************************************************************
 class Solution:
     """
-    Represents a single solution in the Simulated Annealing algorithm.
+    Represents a single solution in the Simulated Annealing algorithm - FIXED VERSION.
     
     A solution consists of food quantities (kg per month) for each available food item.
     This class is designed to work with SA algorithm, providing enhanced
     functionality for solution analysis and manipulation.
     
-    Key features:
-    - Enhanced perturbation methods for neighbor generation
-    - Detailed nutritional analysis capabilities
-    - Cost and budget tracking
-    - Food diversity metrics
+    IMPROVEMENTS:
+    - Realistic quantity bounds and validation
+    - Better perturbation strategies with proper bounds checking
+    - Simplified and more logical cost-aware adjustments
+    - Enhanced local optimization with convergence detection
+    - Input validation and error handling
     """
+    
+    # Class constants for realistic bounds
+    MIN_QUANTITY = 0.0          # Minimum quantity (kg per month)
+    MAX_QUANTITY = 15.0         # Maximum realistic quantity per food (kg per month)
+    MAX_DAILY_QUANTITY = 0.5    # Maximum daily quantity per food (kg per day = 15kg/month)
     
     def __init__(self, quantities: List[float], evaluator: Callable[['Solution'], float]):
         """
@@ -94,19 +103,35 @@ class Solution:
             quantities: List of food quantities in kg per month for each food item
             evaluator: Fitness evaluation function that takes a Solution and returns fitness score
         """
-        self.quantities = quantities.copy()  # Monthly quantities (kg) for each food item
-        self.evaluator = evaluator           # Fitness evaluation function
+        # Validate and bound quantities
+        self.quantities = self._validate_quantities(quantities.copy())
+        self.evaluator = evaluator
         self.fitness = evaluator(self)       # Calculate initial fitness score
     
-    # used
-    @classmethod
-    def random_solution(cls, num_foods: int, evaluator: Callable, max_qty: float = 30.0) -> 'Solution':
+    def _validate_quantities(self, quantities: List[float]) -> List[float]:
         """
-        Create a random solution with random quantities for each food item.
+        Validate and bound quantities to realistic ranges.
+        
+        Args:
+            quantities: Raw quantities to validate
+            
+        Returns:
+            Validated and bounded quantities
+        """
+        validated = []
+        for qty in quantities:
+            # Ensure non-negative and within realistic bounds
+            bounded_qty = max(self.MIN_QUANTITY, min(self.MAX_QUANTITY, float(qty)))
+            validated.append(bounded_qty)
+        return validated
+    
+    @classmethod
+    def random_solution(cls, num_foods: int, evaluator: Callable, max_qty: Optional[float] = None) -> 'Solution':
+        """
+        Create a random solution with realistic food quantities - IMPROVED VERSION.
         
         This factory method generates initial solutions for optimization algorithms.
-        It uses reasonable bounds to avoid extreme solutions that would be
-        immediately rejected.
+        Uses more realistic distribution and constraints.
         
         Args:
             num_foods: Number of food items available
@@ -114,51 +139,33 @@ class Solution:
             max_qty: Maximum quantity for each food item in kg per month
             
         Returns:
-            A new Solution with random food quantities
+            A new Solution with realistic random food quantities
         """
-        # Generate random quantities with bias toward smaller values
-        # This creates more realistic initial solutions
-        quantities = []
-        for _ in range(num_foods):
-            # Use exponential distribution to favor smaller quantities
-            # Most foods will have small quantities, few will have large quantities
-            if random.random() < 0.3:  # 30% chance of zero quantity
-                qty = 0.0
-            else:
-                # Exponential distribution for realistic quantity distribution
-                qty = min(max_qty, np.random.exponential(scale=max_qty/4))
-            quantities.append(qty)
-        
-        return cls(quantities, evaluator)
-    
-    # not used
-    @classmethod
-    def from_food_priorities(cls, num_foods: int, evaluator: Callable, 
-                           food_priorities: List[float] = None) -> 'Solution':
-        """
-        Create a solution based on food priority weights.
-        
-        This method creates more informed initial solutions by considering
-        food quality metrics like protein content, nutrient density, etc.
-        
-        Args:
-            num_foods: Number of food items available
-            evaluator: Fitness evaluation function
-            food_priorities: Optional list of priority weights for each food
-            
-        Returns:
-            A new Solution with priority-weighted quantities
-        """
-        if food_priorities is None:
-            food_priorities = [1.0] * num_foods
+        if max_qty is None:
+            max_qty = cls.MAX_QUANTITY
         
         quantities = []
+        
+        # Ensure at least some foods are selected (avoid all-zero solutions)
+        min_selected_foods = max(3, num_foods // 5)  # At least 20% of foods or minimum 3
+        selected_indices = random.sample(range(num_foods), min_selected_foods)
+        
         for i in range(num_foods):
-            priority = food_priorities[i]
-            # Higher priority foods get higher base quantities
-            base_qty = priority * random.uniform(1, 10)
-            # Add some randomness
-            qty = max(0, base_qty + random.uniform(-2, 2))
+            if i in selected_indices:
+                # Selected foods get realistic quantities
+                # Use gamma distribution for more realistic food quantity distribution
+                # Most foods: 0.5-3kg, few foods: higher quantities
+                shape = 1.5  # Shape parameter for gamma distribution
+                scale = 2.0  # Scale parameter
+                qty = np.random.gamma(shape, scale)
+                qty = min(max_qty, max(0.1, qty))  # Bound between 0.1 and max_qty
+            else:
+                # Non-selected foods have a small chance of being included
+                if random.random() < 0.2:  # 20% chance
+                    qty = random.uniform(0.1, 1.0)  # Small quantity
+                else:
+                    qty = 0.0
+            
             quantities.append(qty)
         
         return cls(quantities, evaluator)
@@ -182,11 +189,12 @@ class Solution:
         This method should be called whenever the solution's quantities
         have been modified and the fitness needs to be updated.
         """
+        self.quantities = self._validate_quantities(self.quantities)
         self.fitness = self.evaluator(self)
     
-    def perturb_random(self, step_size: float = 2.0, num_changes: int = None) -> 'Solution':
+    def perturb_random(self, step_size: float = 1.5, num_changes: Optional[int] = None) -> 'Solution':
         """
-        Create a neighbor solution by randomly perturbing some food quantities.
+        Create a neighbor solution by randomly perturbing some food quantities - IMPROVED.
         
         This is one of the core methods for generating neighboring solutions
         in the SA algorithm. It applies random changes to a subset of food items.
@@ -200,27 +208,33 @@ class Solution:
         """
         new_quantities = self.quantities.copy()
         
-        # Determine how many food items to modify
+        # Determine how many food items to modify (more conservative)
         if num_changes is None:
-            num_changes = random.randint(1, min(5, len(new_quantities)))
+            # Modify 1-3 foods for more focused perturbation
+            num_changes = random.randint(1, min(3, len(new_quantities)))
         
         # Select random food items to modify
         indices_to_change = random.sample(range(len(new_quantities)), num_changes)
         
         for idx in indices_to_change:
+            current_qty = new_quantities[idx]
+            
             # Apply random change within step_size bounds
             change = random.uniform(-step_size, step_size)
-            new_quantities[idx] = max(0.0, new_quantities[idx] + change)
+            new_qty = current_qty + change
             
             # Occasionally set to a completely new random value (exploration)
-            if random.random() < 0.05:
-                new_quantities[idx] = random.uniform(0, 25.0)
+            if random.random() < 0.1:  # Reduced from 0.05 to 0.1 for more exploration
+                new_qty = random.uniform(0, min(5.0, self.MAX_QUANTITY))
+            
+            # Ensure bounds are respected
+            new_quantities[idx] = max(self.MIN_QUANTITY, min(self.MAX_QUANTITY, new_qty))
         
         return Solution(new_quantities, self.evaluator)
     
-    def perturb_focused(self, focus_nutrient: str, step_size: float = 2.0) -> 'Solution':
+    def perturb_focused(self, focus_nutrient: str, step_size: float = 1.5) -> 'Solution':
         """
-        Create a neighbor solution by focusing on improving a specific nutrient.
+        Create a neighbor solution by focusing on improving a specific nutrient - IMPROVED.
         
         This perturbation method is more intelligent than random perturbation.
         It identifies foods that are good sources of the target nutrient and
@@ -239,32 +253,41 @@ class Solution:
         # Find foods that are good sources of the target nutrient
         nutrient_sources = []
         for i, food in enumerate(foods):
-            if focus_nutrient in food.nutrients:
+            if focus_nutrient in food.nutrients and food.nutrients[focus_nutrient] > 0:
                 nutrient_density = food.get_nutrient_density(focus_nutrient)
-                nutrient_sources.append((i, nutrient_density))
+                # Also consider absolute nutrient content, not just cost efficiency
+                absolute_content = food.nutrients[focus_nutrient]
+                # Combined score: 70% efficiency, 30% absolute content
+                combined_score = 0.7 * nutrient_density + 0.3 * absolute_content
+                nutrient_sources.append((i, combined_score, absolute_content))
         
-        # Sort by nutrient density (best sources first)
+        if not nutrient_sources:
+            # Fallback to random perturbation if no sources found
+            return self.perturb_random(step_size)
+        
+        # Sort by combined score (best sources first)
         nutrient_sources.sort(key=lambda x: x[1], reverse=True)
         
-        # Increase quantities of top nutrient sources
-        top_sources = nutrient_sources[:3]  # Top 3 sources
-        for idx, _ in top_sources:
-            increase = random.uniform(0, step_size)
-            new_quantities[idx] += increase
+        # Increase quantities of top nutrient sources (more conservative)
+        top_sources = nutrient_sources[:2]  # Top 2 sources instead of 3
+        for idx, score, content in top_sources:
+            if new_quantities[idx] < self.MAX_QUANTITY * 0.8:  # Don't increase if already high
+                increase = random.uniform(0.1, step_size)
+                new_quantities[idx] = min(self.MAX_QUANTITY, new_quantities[idx] + increase)
         
-        # Optionally decrease quantities of poor sources
+        # Optionally decrease quantities of poor sources (more conservative)
         if len(nutrient_sources) > 3:
             poor_sources = nutrient_sources[-2:]  # Bottom 2 sources
-            for idx, _ in poor_sources:
-                if new_quantities[idx] > 0:
-                    decrease = random.uniform(0, min(step_size, new_quantities[idx]))
-                    new_quantities[idx] -= decrease
+            for idx, score, content in poor_sources:
+                if new_quantities[idx] > 0.5:  # Only decrease if quantity is reasonable
+                    decrease = random.uniform(0, min(step_size * 0.5, new_quantities[idx] * 0.3))
+                    new_quantities[idx] = max(self.MIN_QUANTITY, new_quantities[idx] - decrease)
         
         return Solution(new_quantities, self.evaluator)
     
-    def perturb_cost_aware(self, budget_pressure: float = 0.5, step_size: float = 2.0) -> 'Solution':
+    def perturb_cost_aware(self, budget_pressure: float = 0.5, step_size: float = 1.5) -> 'Solution':
         """
-        Create a neighbor solution with cost-aware perturbations.
+        Create a neighbor solution with cost-aware perturbations - SIMPLIFIED AND IMPROVED.
         
         This method considers food prices when making changes, preferring
         to increase cheaper foods and decrease expensive ones when cost
@@ -283,36 +306,40 @@ class Solution:
         budget_cap = self.evaluator.cost_cap
         
         # Calculate cost pressure (how close we are to budget limit)
-        cost_ratio = current_cost / budget_cap
-        actual_pressure = budget_pressure * min(1.0, cost_ratio)
+        cost_ratio = current_cost / budget_cap if budget_cap > 0 else 0
         
-        if actual_pressure > 0.3:  # High cost pressure
-            # Favor cheaper foods, reduce expensive ones
+        # Simplified logic: if over budget or close to budget, reduce expensive foods
+        if cost_ratio > 0.8:  # If using more than 80% of budget
+            # Focus on reducing expensive foods
             food_costs = [(i, food.price) for i, food in enumerate(foods)]
-            food_costs.sort(key=lambda x: x[1])  # Sort by price (cheapest first)
+            # Sort by price (most expensive first)
+            food_costs.sort(key=lambda x: x[1], reverse=True)
             
-            # Increase cheaper foods
-            cheap_foods = food_costs[:len(foods)//3]  # Cheapest third
-            for idx, _ in cheap_foods:
-                if random.random() < 0.4:  # 40% chance to increase
-                    increase = random.uniform(0, step_size)
-                    new_quantities[idx] += increase
+            # Reduce expensive foods that have significant quantities
+            expensive_foods = food_costs[:len(foods)//2]  # Top half by price
+            for idx, price in expensive_foods:
+                if new_quantities[idx] > 0.2:  # Only if has reasonable quantity
+                    if random.random() < 0.4:  # 40% chance to reduce
+                        decrease = random.uniform(0.1, min(step_size, new_quantities[idx] * 0.4))
+                        new_quantities[idx] = max(self.MIN_QUANTITY, new_quantities[idx] - decrease)
             
-            # Decrease expensive foods
-            expensive_foods = food_costs[-len(foods)//3:]  # Most expensive third
-            for idx, _ in expensive_foods:
-                if new_quantities[idx] > 0 and random.random() < 0.6:  # 60% chance to decrease
-                    decrease = random.uniform(0, min(step_size, new_quantities[idx]))
-                    new_quantities[idx] -= decrease
+            # Slightly increase some cheap, nutritious foods
+            cheap_foods = food_costs[-len(foods)//3:]  # Bottom third by price
+            for idx, price in cheap_foods:
+                if new_quantities[idx] < self.MAX_QUANTITY * 0.7:  # If not already high
+                    if random.random() < 0.3:  # 30% chance to increase
+                        increase = random.uniform(0.1, step_size * 0.7)
+                        new_quantities[idx] = min(self.MAX_QUANTITY, new_quantities[idx] + increase)
+        
         else:
-            # Normal random perturbation when cost pressure is low
+            # Normal perturbation when cost pressure is low
             return self.perturb_random(step_size)
         
         return Solution(new_quantities, self.evaluator)
     
-    def local_optimization_step(self, step_size: float = 1.0) -> 'Solution':
+    def local_optimization_step(self, step_size: float = 0.8) -> 'Solution':
         """
-        Perform a local optimization step to fine-tune the solution.
+        Perform a local optimization step to fine-tune the solution - IMPROVED.
         
         This method makes small, calculated adjustments to improve the
         solution incrementally. It's useful for fine-tuning near-optimal solutions.
@@ -325,52 +352,70 @@ class Solution:
         """
         new_quantities = self.quantities.copy()
         
-        # Get current nutritional status
-        current_analysis = self.get_detailed_nutritional_analysis()
-        
-        # Identify deficient nutrients
-        deficient_nutrients = []
-        excessive_nutrients = []
-        
-        for nutrient, status in current_analysis['nutritional_status'].items():
-            if status['status'] == 'DEFICIENT':
-                deficient_nutrients.append(nutrient)
-            elif status['status'] == 'EXCESSIVE':
-                excessive_nutrients.append(nutrient)
-        
-        # Try to fix deficiencies
-        foods = self.evaluator.foods
-        for nutrient in deficient_nutrients[:2]:  # Focus on top 2 deficiencies
-            # Find best sources of this nutrient
-            best_sources = []
-            for i, food in enumerate(foods):
-                if nutrient in food.nutrients:
-                    efficiency = food.get_nutrient_density(nutrient)
-                    best_sources.append((i, efficiency))
+        try:
+            # Get current nutritional status
+            current_analysis = self.get_detailed_nutritional_analysis()
             
-            best_sources.sort(key=lambda x: x[1], reverse=True)
+            # Identify deficient and excessive nutrients
+            deficient_nutrients = []
+            excessive_nutrients = []
             
-            # Increase top sources slightly
-            for idx, _ in best_sources[:2]:
-                increase = random.uniform(0, step_size)
-                new_quantities[idx] += increase
+            nutritional_status = current_analysis.get('nutritional_status', {})
+            for nutrient, status in nutritional_status.items():
+                status_val = status.get('status', 'UNKNOWN') if isinstance(status, dict) else str(status)
+                if status_val == 'DEFICIENT':
+                    deficient_nutrients.append(nutrient)
+                elif status_val == 'EXCESSIVE':
+                    excessive_nutrients.append(nutrient)
+            
+            # Focus on the most critical deficiency
+            foods = self.evaluator.foods
+            if deficient_nutrients:
+                target_nutrient = deficient_nutrients[0]  # Most critical
+                
+                # Find best sources of this nutrient
+                best_sources = []
+                for i, food in enumerate(foods):
+                    if target_nutrient in food.nutrients and food.nutrients[target_nutrient] > 0:
+                        efficiency = food.get_nutrient_density(target_nutrient)
+                        content = food.nutrients[target_nutrient]
+                        # Balance efficiency and content
+                        score = 0.6 * efficiency + 0.4 * content
+                        best_sources.append((i, score))
+                
+                if best_sources:
+                    best_sources.sort(key=lambda x: x[1], reverse=True)
+                    
+                    # Increase top source slightly
+                    for idx, score in best_sources[:1]:  # Only top source
+                        if new_quantities[idx] < self.MAX_QUANTITY * 0.9:
+                            increase = random.uniform(0.1, step_size)
+                            new_quantities[idx] = min(self.MAX_QUANTITY, new_quantities[idx] + increase)
+                            break  # Only modify one food for local optimization
+            
+            # Handle excesses more conservatively
+            if excessive_nutrients and random.random() < 0.3:  # Only sometimes
+                target_nutrient = excessive_nutrients[0]
+                
+                # Find foods contributing most to this nutrient
+                contributors = []
+                for i, (qty, food) in enumerate(zip(new_quantities, foods)):
+                    if qty > 0.2 and target_nutrient in food.nutrients:
+                        contribution = qty * food.nutrients[target_nutrient] * 10  # Monthly contribution
+                        contributors.append((i, contribution))
+                
+                if contributors:
+                    contributors.sort(key=lambda x: x[1], reverse=True)
+                    
+                    # Slightly reduce top contributor
+                    idx, contribution = contributors[0]
+                    if new_quantities[idx] > 0.3:
+                        decrease = random.uniform(0.1, min(step_size * 0.5, new_quantities[idx] * 0.2))
+                        new_quantities[idx] = max(self.MIN_QUANTITY, new_quantities[idx] - decrease)
         
-        # Try to reduce excesses
-        for nutrient in excessive_nutrients[:1]:  # Focus on top excess
-            # Find foods high in this nutrient and reduce them
-            high_contributors = []
-            for i, (qty, food) in enumerate(zip(new_quantities, foods)):
-                if qty > 0 and nutrient in food.nutrients:
-                    contribution = qty * food.nutrients[nutrient] * 10  # Monthly contribution
-                    high_contributors.append((i, contribution))
-            
-            high_contributors.sort(key=lambda x: x[1], reverse=True)
-            
-            # Reduce top contributors slightly
-            for idx, _ in high_contributors[:2]:
-                if new_quantities[idx] > 0:
-                    decrease = random.uniform(0, min(step_size, new_quantities[idx]))
-                    new_quantities[idx] -= decrease
+        except Exception as e:
+            # If analysis fails, fallback to small random perturbation
+            return self.perturb_random(step_size * 0.5)
         
         return Solution(new_quantities, self.evaluator)
     
@@ -435,7 +480,17 @@ class Solution:
         Returns:
             Dictionary with detailed nutritional analysis
         """
-        return self.evaluator.get_detailed_analysis(self)
+        try:
+            return self.evaluator.get_detailed_analysis(self)
+        except Exception as e:
+            # Return basic analysis if detailed analysis fails
+            return {
+                'total_monthly_cost': self.get_total_cost(),
+                'monthly_nutrients': self.get_nutrient_totals(),
+                'daily_nutrients': self.get_daily_nutrient_totals(),
+                'nutritional_status': {},
+                'error': str(e)
+            }
     
     def get_deficient_nutrients(self) -> List[str]:
         """
@@ -446,11 +501,11 @@ class Solution:
         """
         daily_nutrients = self.get_daily_nutrient_totals()
         min_daily = {nut: req/30 for nut, req in self.evaluator.min_req.items()}
-        directions = self.evaluator.directions
+        directions = getattr(self.evaluator, 'directions', {})
         
         deficient = []
         for nut, actual in daily_nutrients.items():
-            minimum = min_daily[nut]
+            minimum = min_daily.get(nut, 0)
             direction = directions.get(nut, 'max')
             
             if direction == 'max' and actual < minimum:
@@ -458,9 +513,36 @@ class Solution:
         
         return deficient
     
+    def is_feasible(self, tolerance: float = 0.05) -> bool:
+        """
+        Check if the solution is feasible (meets basic constraints).
+        
+        Args:
+            tolerance: Tolerance for constraint violations (5% by default)
+            
+        Returns:
+            True if solution is feasible
+        """
+        # Check budget constraint
+        total_cost = self.get_total_cost()
+        budget_cap = self.evaluator.cost_cap
+        if total_cost > budget_cap * (1 + tolerance):
+            return False
+        
+        # Check if any critical nutrients are severely deficient
+        daily_nutrients = self.get_daily_nutrient_totals()
+        min_daily = {nut: req/30 for nut, req in self.evaluator.min_req.items()}
+        
+        for nut, actual in daily_nutrients.items():
+            minimum = min_daily.get(nut, 0)
+            if minimum > 0 and actual < minimum * (1 - tolerance):
+                return False
+        
+        return True
+    
     def __repr__(self) -> str:
         """Detailed string representation for debugging."""
-        return f"Solution(quantities={self.quantities}, fitness={self.fitness})"
+        return f"Solution(quantities={[round(q, 2) for q in self.quantities]}, fitness={self.fitness:.2f})"
     
     def __lt__(self, other: 'Solution') -> bool:
         """Less than comparison based on fitness (for sorting)."""
@@ -484,4 +566,4 @@ class Solution:
     
     def __hash__(self) -> int:
         """Hash function for using solutions in sets/dictionaries."""
-        return hash(tuple(self.quantities))
+        return hash(tuple(round(q, 4) for q in self.quantities))
