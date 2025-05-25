@@ -8,14 +8,7 @@ from .models import Individual, FoodItem
 init(autoreset=True)
 
 class FitnessEvaluator:
-    """
-    Implements a piecewise nutrient‐direction fitness with:
-      - Base linear penalty (real - min_val) for any val ≠ min_val
-      - Directional band‐reward for:
-          * 'max': reward when min_val ≤ val ≤ opt_val
-          * 'min': reward when opt_val ≤ val ≤ min_val
-      - Extra linear penalty beyond the band edges
-    """
+   
     def __init__(
         self,
         foods: List[FoodItem],
@@ -66,19 +59,23 @@ class FitnessEvaluator:
             Score for this nutrient (higher is better)
         """
         # 1) Base penalty for any deviation from min_val
-        base_penalty = -5*weight * abs(val - min_val) / min_val
+        #base_penalty = -5*weight * abs(val - min_val) / min_val
 
         # 2) Directional band reward (or extra penalty if outside band)
         band_reward = 0.0
         if direction == 'max':
-            if min_val <= val <= opt_val:
-                band_reward = 4.5*weight * (val - min_val) / min_val
+            if min_val <= val:
+                band_reward = -4.5*weight * (val - min_val) / min_val
+            else:
+                band_reward = 1000*weight * (val - min_val) / min_val
            
         elif direction == 'min':
-            if opt_val <= val <= min_val:
-                band_reward = 4.5*weight * (min_val - val) / min_val
+            if val <= min_val:
+                band_reward = -4.5*weight * (min_val - val) / min_val
+            else:
+                band_reward = 1000*weight * (min_val - val) / min_val
 
-        return base_penalty + band_reward
+        return band_reward
 
     def __call__(self, ind: Individual) -> float:
         """
@@ -102,7 +99,7 @@ class FitnessEvaluator:
         # 2) heavy budget penalty
         score = 0.0
         if cost > self.cost_cap:
-            score -= 500*(cost - self.cost_cap)
+            score -= 5000*(cost - self.cost_cap)
 
         # 3) Nutrient‐by‐nutrient scoring
         for nut, min_val in self.min_req.items():
