@@ -65,13 +65,13 @@ class FitnessEvaluator:
         band_reward = 0.0
         if direction == 'max':
             if min_val <= val:
-                band_reward = -4.5*weight * (val - min_val) / min_val
+                band_reward = -100*weight * (val - min_val) / min_val
             else:
                 band_reward = 1000*weight * (val - min_val) / min_val
            
         elif direction == 'min':
             if val <= min_val:
-                band_reward = -4.5*weight * (min_val - val) / min_val
+                band_reward = -100*weight * (min_val - val) / min_val
             else:
                 band_reward = 1000*weight * (min_val - val) / min_val
 

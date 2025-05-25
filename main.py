@@ -300,15 +300,15 @@ Algorithm Information:
     
     # GA arguments
     ga_group = parser.add_argument_group('Genetic Algorithm Options')
-    ga_group.add_argument('--pop', type=int, default=2000,
+    ga_group.add_argument('--pop', type=int, default=1600,
                          help='Population size for GA')
-    ga_group.add_argument('--gens', type=int, default=111,
+    ga_group.add_argument('--gens', type=int, default=99,
                          help='Number of generations for GA')
     ga_group.add_argument('--mut', type=float, default=0.25,
                          help='Initial mutation rate for GA')
     ga_group.add_argument('--final-mut', type=float, default=0.01,
                          help='Final mutation rate for GA')
-    ga_group.add_argument('--retain', type=int, default=70,
+    ga_group.add_argument('--retain', type=int, default=80,
                          help='Number of elite individuals to retain')
     
     # SA arguments

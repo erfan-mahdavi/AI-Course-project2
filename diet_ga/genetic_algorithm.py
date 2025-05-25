@@ -182,8 +182,27 @@ class GeneticAlgorithm:
                 if gen % 10 == 9:
                     print(f"{'-'*80}")
             
-            # Calculate final results
-            cost_last, totals_last = self._compute_cost_and_totals(self.population.individuals[0])
+            
+            def within_constraints(ind):
+                totals_month = {nut:0.0 for nut in self.population.evaluator.min_req}
+                for qty, food in zip(ind.chromosome, self.population.evaluator.foods):
+                    for nut, per100 in food.nutrients.items():
+                        totals_month[nut] += per100*10*qty
+                for nut, min_val in self.population.evaluator.min_req.items():
+                    dirn = self.population.evaluator.directions[nut]
+                    val = totals_month[nut]
+                    # remove if above min_req for 'min' nutrients
+                    if dirn=='min' and val>min_val:
+                        return False
+                    # remove if below min_req for 'max' nutrients
+                    if dirn=='max' and val<min_val:
+                        return False
+                return True
+
+            filtered = list(filter(within_constraints, self.population.individuals))
+            best_final = filtered[0] if filtered else self.population.individuals[0]
+            cost_last, totals_last = self._compute_cost_and_totals(best_final)
+
             
             # Generate plots
             self.plotter.plot(best_history, avg_history)
@@ -193,11 +212,12 @@ class GeneticAlgorithm:
             
             # Return best solution along with additional information
             return (
-                self.population.individuals[0].chromosome,
-                self.population.individuals[0].fitness,
-                cost_last,
-                totals_last
-            )
+                  best_final.chromosome,
+                  best_final.fitness,
+                  cost_last,
+                  totals_last
+                    )
+
             
         except Exception as e:
             print(f"Error running Genetic Algorithm: {e}")
