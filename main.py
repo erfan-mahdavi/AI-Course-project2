@@ -300,9 +300,9 @@ Algorithm Information:
     
     # GA arguments
     ga_group = parser.add_argument_group('Genetic Algorithm Options')
-    ga_group.add_argument('--pop', type=int, default=1500,
+    ga_group.add_argument('--pop', type=int, default=2000,
                          help='Population size for GA')
-    ga_group.add_argument('--gens', type=int, default=90,
+    ga_group.add_argument('--gens', type=int, default=99,
                          help='Number of generations for GA')
     ga_group.add_argument('--mut', type=float, default=0.25,
                          help='Initial mutation rate for GA')
