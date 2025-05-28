@@ -2,6 +2,7 @@ import random
 from typing import List, Callable, Dict
 import numpy as np
 
+random.seed(42)
 class FoodItem:
     """
     Represents a single food item with nutritional information and price.

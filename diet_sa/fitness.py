@@ -78,54 +78,68 @@ class FitnessEvaluator:
             optimal_val = self.optimal.get(nutrient, minimum)
             weight = self.weights.get(nutrient, 1.0)
             direction = self.directions.get(nutrient, 'min')
-            
-            if direction == 'max':
-                # For MAX nutrients (protein, fiber, calcium, iron):
-                # - Heavy penalty if below minimum requirement
-                # - Light bonus if between minimum and optimal (closer to minimum is better)
-                # - Small penalty if above optimal (too much is still not ideal)
+            # 2-1:
+            # if direction == 'max':
+            #     # For MAX nutrients (protein, fiber, calcium, iron):
+            #     # - Heavy penalty if below minimum requirement
+            #     # - Light bonus if between minimum and optimal (closer to minimum is better)
+            #     # - Small penalty if above optimal (too much is still not ideal)
                 
-                if actual < minimum:
-                    # Critical deficiency - heavy penalty
-                    deficiency_penalty = ((minimum - actual) / minimum) * 500 * weight
-                    fitness -= deficiency_penalty
-                elif actual <= optimal_val:
-                    # Good range - bonus for being closer to minimum (more efficient)
-                    # Closer to minimum = better, so bonus decreases as we approach optimal
-                    distance_from_optimal = optimal_val - actual
-                    max_distance = optimal_val - minimum
-                    if max_distance > 0:
-                        efficiency_bonus = (distance_from_optimal / max_distance) * 500 * weight
-                        fitness += efficiency_bonus
-                else:
-                    # Above optimal - penalty for excess
-                    excess_penalty = ((actual - optimal_val) / optimal_val) * 200 * weight
-                    fitness -= excess_penalty
+            #     if actual < minimum:
+            #         # Critical deficiency - heavy penalty
+            #         deficiency_penalty = ((minimum - actual) / minimum) * 500 * weight
+            #         fitness -= deficiency_penalty
+            #     elif actual <= optimal_val:
+            #         # Good range - bonus for being closer to minimum (more efficient)
+            #         # Closer to minimum = better, so bonus decreases as we approach optimal
+            #         distance_from_optimal = optimal_val - actual
+            #         max_distance = optimal_val - minimum
+            #         if max_distance > 0:
+            #             efficiency_bonus = (distance_from_optimal / max_distance) * 500 * weight
+            #             fitness += efficiency_bonus
+            #     else:
+            #         # Above optimal - penalty for excess
+            #         excess_penalty = ((actual - optimal_val) / optimal_val) * 200 * weight
+            #         fitness -= excess_penalty
                     
-            else:  # direction == 'min'
-                # For MIN nutrients (calories, fat, carbs):
-                # - Heavy penalty if below optimal requirement
-                # - Bonus if between minimum and optimal (closer to minimum is better)
-                # - Small penalty if above minimum
+            # else:  # direction == 'min'
+            #     # For MIN nutrients (calories, fat, carbs):
+            #     # - Heavy penalty if below optimal requirement
+            #     # - Bonus if between minimum and optimal (closer to minimum is better)
+            #     # - Small penalty if above minimum
                 
-                if actual < optimal_val:
-                    # Below optimal - heavy penalty for being too restrictive/unrealistic
-                    under_penalty = ((optimal_val - actual) / optimal_val) * 500 * weight
-                    fitness -= under_penalty
-                elif actual <= minimum:
-                    # Between optimal and minimum - bonus for efficiency (closer to minimum is better)
-                    distance_from_optimal = actual - optimal_val
-                    max_distance = minimum - optimal_val
-                    if max_distance > 0:
-                        efficiency_bonus = (distance_from_optimal / max_distance) * 500 * weight
-                        fitness += efficiency_bonus
+            #     if actual < optimal_val:
+            #         # Below optimal - heavy penalty for being too restrictive/unrealistic
+            #         under_penalty = ((optimal_val - actual) / optimal_val) * 500 * weight
+            #         fitness -= under_penalty
+            #     elif actual <= minimum:
+            #         # Between optimal and minimum - bonus for efficiency (closer to minimum is better)
+            #         distance_from_optimal = actual - optimal_val
+            #         max_distance = minimum - optimal_val
+            #         if max_distance > 0:
+            #             efficiency_bonus = (distance_from_optimal / max_distance) * 500 * weight
+            #             fitness += efficiency_bonus
+            #     else:
+            #         # Above minimum - penalty for excess
+            #         excess_penalty = ((actual - minimum) / minimum) * 200 * weight
+            #         fitness -= excess_penalty
+            # 2-2:
+            band_reward = 0.0
+            if direction == 'max':
+                if minimum <= actual:
+                    band_reward = -100*weight * (actual - minimum) / minimum
                 else:
-                    # Above minimum - penalty for excess
-                    excess_penalty = ((actual - minimum) / minimum) * 200 * weight
-                    fitness -= excess_penalty
-        
+                    band_reward = 1000*weight * (actual - minimum) / minimum
+            
+            elif direction == 'min':
+                if actual <= minimum:
+                    band_reward = -100*weight * (minimum - actual) / minimum
+                else:
+                    band_reward = 1000*weight * (minimum - actual) / minimum
+            fitness+=band_reward
+
         # 3. Cost efficiency bonus - reward for staying reasonably under budget
-        if 3000000.0 <= total_cost <= self.cost_cap:  # 1.5M to 95% of budget
+        if 3000000.0 <= total_cost <= self.cost_cap:
             cost_efficiency = ((self.cost_cap - total_cost) / self.cost_cap) * 100
             fitness += cost_efficiency
         
@@ -218,7 +232,7 @@ class FitnessEvaluator:
             breakdown['budget_penalty'] = -((total_cost - self.cost_cap) / self.cost_cap) * 1000
         
         # Cost efficiency bonus
-        if 1500000.0 <= total_cost <= self.cost_cap * 0.95:
+        if 3000000.0 <= total_cost <= self.cost_cap:
             breakdown['cost_efficiency_bonus'] = ((self.cost_cap - total_cost) / self.cost_cap) * 100
         
         # Weight penalty

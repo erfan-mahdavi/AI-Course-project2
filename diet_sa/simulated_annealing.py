@@ -5,6 +5,8 @@ from .plotting import Plotter
 from typing import List, Dict, Tuple
 import math
 import random
+
+random.seed(42)
 import numpy as np
 
 class SimulatedAnnealing:
@@ -51,15 +53,24 @@ class SimulatedAnnealing:
         
         # here
         # Nutrient importance weights
+        # weights = {
+        #     'calories': 1.55,
+        #     'protein': 3.0,
+        #     'fat': 1.5,
+        #     'carbs': 1.55,
+        #     'fiber': 3.5,
+        #     'calcium': 3.0,
+        #     'iron': 3.0,
+        # }
         weights = {
-            'calories': 1.5,
-            'protein': 2.5,
-            'fat': 1.5,
-            'carbs': 1.5,
-            'fiber': 3.5,
-            'calcium': 3.0,
-            'iron': 3.0,
-        }
+                'calories': 0.95, 
+                'protein': 1.22, 
+                'fat': 1.2,
+                'carbs': 1.2,     
+                'fiber': 1.27,  
+                'calcium': 1.3,
+                'iron': 1.2,
+            }
         
         # Create fitness evaluator
         self.evaluator = FitnessEvaluator(foods, min_req, optimal, weights, cost_cap)
