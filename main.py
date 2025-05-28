@@ -307,7 +307,7 @@ Algorithm Information:
     ga_group = parser.add_argument_group('Genetic Algorithm Options')
     ga_group.add_argument('--pop', type=int, default=1600,
                          help='Population size for GA')
-    ga_group.add_argument('--gens', type=int, default=99,
+    ga_group.add_argument('--gens', type=int, default=120,
                          help='Number of generations for GA')
     ga_group.add_argument('--mut', type=float, default=0.25,
                          help='Initial mutation rate for GA')
