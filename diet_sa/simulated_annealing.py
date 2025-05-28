@@ -42,9 +42,9 @@ class SimulatedAnnealing:
             'calories': 1990,   # Less calories for weight management 
             'protein': 110,     # More protein for muscle strength
             'fat': 50,          # Less fat for healthy diet
-            'carbs': 240,       # Less carbs to control sugar intake
+            'carbs': 235,       # Less carbs to control sugar intake
             'fiber': 33,        # More fiber for digestion
-            'calcium': 1010,    # More calcium for strong bones
+            'calcium': 1025,    # More calcium for strong bones
             'iron': 25,         # More iron to prevent anemia
         }
         optimal = {nut: val * 30 for nut, val in optimal_daily.items()}
@@ -52,12 +52,12 @@ class SimulatedAnnealing:
         # 
         # Nutrient importance weights
         weights = {
-            'calories': 5.5,
+            'calories': 1.5,
             'protein': 2.5,
-            'fat': 5.5,
-            'carbs': 5.5,
-            'fiber': 2.5,
-            'calcium': 2.0,
+            'fat': 1.5,
+            'carbs': 1.5,
+            'fiber': 3.5,
+            'calcium': 3.0,
             'iron': 3.0,
         }
         
