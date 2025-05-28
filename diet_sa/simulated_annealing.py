@@ -64,10 +64,10 @@ class SimulatedAnnealing:
         # }
         weights = {
                 'calories': 0.95, 
-                'protein': 1.22, 
+                'protein': 1.23, #2-5
                 'fat': 1.2,
                 'carbs': 1.2,     
-                'fiber': 1.27,  
+                'fiber': 1.25,  #5-7
                 'calcium': 1.3,
                 'iron': 1.2,
             }
@@ -282,7 +282,7 @@ class SimulatedAnnealing:
         
         # Generate plots
         try:
-            # self._plot_convergence()
+            self._plot_convergence()
             self.plotter.plot_nutrition_comparison(
                 self.min_daily, self.optimal_daily, final_nutrients
             )
