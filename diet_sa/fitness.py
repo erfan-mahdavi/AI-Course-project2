@@ -98,7 +98,7 @@ class FitnessEvaluator:
                         efficiency_bonus = (distance_from_optimal / max_distance) * 500 * weight
                         fitness += efficiency_bonus
                 else:
-                    # Above optimal - small penalty for excess
+                    # Above optimal - penalty for excess
                     excess_penalty = ((actual - optimal_val) / optimal_val) * 200 * weight
                     fitness -= excess_penalty
                     

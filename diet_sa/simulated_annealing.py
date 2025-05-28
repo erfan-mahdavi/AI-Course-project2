@@ -49,7 +49,7 @@ class SimulatedAnnealing:
         }
         optimal = {nut: val * 30 for nut, val in optimal_daily.items()}
         
-        # 
+        # here
         # Nutrient importance weights
         weights = {
             'calories': 1.5,
@@ -95,16 +95,18 @@ class SimulatedAnnealing:
         """
         Generate neighbor solution using multiple strategies.
         """
-        current_cost = current_solution.get_total_cost()
-        deficient_nutrients = current_solution.get_deficient_nutrients()
+        # current_cost = current_solution.get_total_cost()
+        # deficient_nutrients = current_solution.get_deficient_nutrients()
         
-        # Choose strategy based on current state
-        if current_cost >= self.cost_cap:  # Near budget limit
-            return current_solution._reduce_cost_neighbor(self.foods.copy(), self.step_size)
-        elif len(deficient_nutrients) > 0:  # Has deficiencies
-            return current_solution.perturb_focused(deficient_nutrients, self.step_size)
-        else:  # Normal case
-            return current_solution.perturb_simple(self.step_size)
+        return current_solution.perturb_simple(self.step_size)
+    
+        # # Choose strategy based on current state
+        # if current_cost >= self.cost_cap:  # Near budget limit
+        #     return current_solution._reduce_cost_neighbor(self.foods.copy(), self.step_size)
+        # elif len(deficient_nutrients) > 0:  # Has deficiencies
+        #     return current_solution.perturb_focused(deficient_nutrients, self.step_size)
+        # else:  # Normal case
+        #     return current_solution.perturb_simple(self.step_size)
 
     def acceptance_probability(self, current_fitness: float, new_fitness: float, temperature: float) -> float:
         """Calculate acceptance probability."""

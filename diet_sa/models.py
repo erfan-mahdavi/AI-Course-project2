@@ -112,13 +112,10 @@ class Solution:
         
         # Step 1: Select essential high-priority foods for each nutrient
         nutrients = [   
-                        'calories',
-                        'fat',
-                        'carbs',
                         'protein',
                         'fiber',
                         'calcium',
-                        'iron'
+                        'iron',
                     ]
         used_cap = 0
         for nutrient in nutrients:
