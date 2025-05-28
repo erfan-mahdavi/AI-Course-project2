@@ -322,9 +322,9 @@ Algorithm Information:
                          help='Maximum iterations for SA')
     sa_group.add_argument('--temp', type=float, default=1.0,
                          help='Initial temperature for SA')
-    sa_group.add_argument('--final-temp', type=float, default=0.00000000001,
+    sa_group.add_argument('--final-temp', type=float, default=0.000000000001,
                          help='Final temperature for SA')
-    sa_group.add_argument('--cooling', type=float, default=0.9999,
+    sa_group.add_argument('--cooling', type=float, default=0.99999,
                          help='Cooling rate for SA')
     sa_group.add_argument('--step-size', type=float, default=1,
                          help='Step size for SA (kg)')

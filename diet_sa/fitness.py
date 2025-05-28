@@ -64,8 +64,9 @@ class FitnessEvaluator:
         
         # 1. Budget constraint - heavy penalty for exceeding budget
         if total_cost > self.cost_cap:
-            budget_penalty = ((total_cost - self.cost_cap) / self.cost_cap) * 1000
-            fitness -= budget_penalty
+            # budget_penalty = ((total_cost - self.cost_cap) / self.cost_cap) * 1000
+            # fitness -= budget_penalty
+            return -10000
         
         # 2. Process each nutrient based on its direction
         for nutrient in self.min_req:
@@ -94,11 +95,11 @@ class FitnessEvaluator:
                     distance_from_optimal = optimal_val - actual
                     max_distance = optimal_val - minimum
                     if max_distance > 0:
-                        efficiency_bonus = (distance_from_optimal / max_distance) * 50 * weight
+                        efficiency_bonus = (distance_from_optimal / max_distance) * 500 * weight
                         fitness += efficiency_bonus
                 else:
                     # Above optimal - small penalty for excess
-                    excess_penalty = ((actual - optimal_val) / optimal_val) * 20 * weight
+                    excess_penalty = ((actual - optimal_val) / optimal_val) * 200 * weight
                     fitness -= excess_penalty
                     
             else:  # direction == 'min'
@@ -109,14 +110,14 @@ class FitnessEvaluator:
                 
                 if actual < optimal_val:
                     # Below optimal - heavy penalty for being too restrictive/unrealistic
-                    under_penalty = ((optimal_val - actual) / optimal_val) * 400 * weight
+                    under_penalty = ((optimal_val - actual) / optimal_val) * 500 * weight
                     fitness -= under_penalty
                 elif actual <= minimum:
                     # Between optimal and minimum - bonus for efficiency (closer to minimum is better)
                     distance_from_optimal = actual - optimal_val
                     max_distance = minimum - optimal_val
                     if max_distance > 0:
-                        efficiency_bonus = (distance_from_optimal / max_distance) * 80 * weight
+                        efficiency_bonus = (distance_from_optimal / max_distance) * 500 * weight
                         fitness += efficiency_bonus
                 else:
                     # Above minimum - penalty for excess
@@ -124,14 +125,9 @@ class FitnessEvaluator:
                     fitness -= excess_penalty
         
         # 3. Cost efficiency bonus - reward for staying reasonably under budget
-        if 1500000.0 <= total_cost <= self.cost_cap * 0.95:  # 1.5M to 95% of budget
+        if 3000000.0 <= total_cost <= self.cost_cap:  # 1.5M to 95% of budget
             cost_efficiency = ((self.cost_cap - total_cost) / self.cost_cap) * 100
             fitness += cost_efficiency
-        
-        # 4. Penalize solutions that are too restrictive (very low total weight)
-        total_weight = sum(quantities)
-        if total_weight < 10:  # Less than 10kg total seems unrealistic
-            fitness -= (10 - total_weight) * 50
         
         return fitness
         

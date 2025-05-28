@@ -39,25 +39,26 @@ class SimulatedAnnealing:
         
         # Optimal targets - these are what Lili really wants for best health
         optimal_daily = {
-            'calories': 1900,   # Less calories for weight management 
+            'calories': 1990,   # Less calories for weight management 
             'protein': 110,     # More protein for muscle strength
             'fat': 50,          # Less fat for healthy diet
             'carbs': 240,       # Less carbs to control sugar intake
-            'fiber': 35,        # More fiber for digestion
-            'calcium': 1100,    # More calcium for strong bones
+            'fiber': 33,        # More fiber for digestion
+            'calcium': 1010,    # More calcium for strong bones
             'iron': 25,         # More iron to prevent anemia
         }
         optimal = {nut: val * 30 for nut, val in optimal_daily.items()}
         
+        # 
         # Nutrient importance weights
         weights = {
-            'calories': 1.0,
-            'protein': 2.0,
-            'fat': 1.0,
-            'carbs': 1.0,
-            'fiber': 1.5,
-            'calcium': 1.5,
-            'iron': 2.0
+            'calories': 5.5,
+            'protein': 2.5,
+            'fat': 5.5,
+            'carbs': 5.5,
+            'fiber': 2.5,
+            'calcium': 2.0,
+            'iron': 3.0,
         }
         
         # Create fitness evaluator
@@ -98,7 +99,7 @@ class SimulatedAnnealing:
         deficient_nutrients = current_solution.get_deficient_nutrients()
         
         # Choose strategy based on current state
-        if current_cost >= self.cost_cap * 0.98:  # Near budget limit
+        if current_cost >= self.cost_cap:  # Near budget limit
             return current_solution._reduce_cost_neighbor(self.foods.copy(), self.step_size)
         elif len(deficient_nutrients) > 0:  # Has deficiencies
             return current_solution.perturb_focused(deficient_nutrients, self.step_size)
@@ -268,7 +269,7 @@ class SimulatedAnnealing:
         
         # Generate plots
         try:
-            self._plot_convergence()
+            # self._plot_convergence()
             self.plotter.plot_nutrition_comparison(
                 self.min_daily, self.optimal_daily, final_nutrients
             )

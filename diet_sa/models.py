@@ -124,13 +124,13 @@ class Solution:
         for nutrient in nutrients:
             if nutrient in nutrient_priorities:
                 # Select top 2 sources for each critical nutrient
-                top_sources = nutrient_priorities[nutrient][:2]
+                top_sources = nutrient_priorities[nutrient][:5]
                 for food_idx, food , density in top_sources:
                     if density > 0.1:  # Meaningful density threshold
                         if used_cap<budget_cap:
                             selected_foods.add(food_idx)
                             # Base quantity using gamma distribution
-                            base_qty = np.random.gamma(1.5, 1)
+                            base_qty = np.random.gamma(2.5, 2)
                             quantities[food_idx] = max(quantities[food_idx], base_qty)
                             used_cap+=(quantities[food_idx]*food.price)
         
@@ -265,19 +265,31 @@ class Solution:
         
         deficient = []
         for nutrient, actual in daily_nutrients.items():
-            if self.directions[nutrient]=='max':
-                if not (opt_daily[nutrient] > actual > min_daily[nutrient]):
-                    if actual<min_daily[nutrient]:
-                        deficient.append((nutrient,'increase'))
-                    elif actual>opt_daily[nutrient]:
-                        deficient.append((nutrient,'decrease'))
-
-            else:
-                if not (opt_daily[nutrient] < actual < min_daily[nutrient]):
-                    if actual>min_daily[nutrient]:
-                        deficient.append((nutrient,'decrease'))
-                    elif actual<opt_daily[nutrient]:
-                        deficient.append((nutrient,'increase'))
+            if self.directions[nutrient] == 'max':
+                # For MAX nutrients (protein, fiber, calcium, iron):
+                # - Heavy penalty if below minimum requirement
+                # - Light bonus if between minimum and optimal (closer to minimum is better)
+                # - Small penalty if above optimal (too much is still not ideal)
+                
+                if actual < min_daily[nutrient]:
+                    deficient.append((nutrient,'increase'))
+                elif actual <= opt_daily[nutrient]:
+                    continue
+                else:
+                    deficient.append((nutrient,'decrease'))
+                    
+            else:  # direction == 'min'
+                # For MIN nutrients (calories, fat, carbs):
+                # - Heavy penalty if below optimal requirement
+                # - Bonus if between minimum and optimal (closer to minimum is better)
+                # - Small penalty if above minimum
+                
+                if actual < opt_daily[nutrient]:
+                    deficient.append((nutrient,'increase'))
+                elif actual <= min_daily[nutrient]:
+                    continue
+                else:
+                    deficient.append((nutrient,'decrease'))
         
         return deficient
     
