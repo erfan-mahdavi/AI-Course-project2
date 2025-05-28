@@ -96,7 +96,7 @@ class Solution:
         
         # Sort each nutrient's sources by efficiency (highest first)
         for nutrient in nutrient_sources:
-            nutrient_sources[nutrient] = sorted(nutrient_sources[nutrient],key=lambda x: x[1], reverse=True)
+            nutrient_sources[nutrient] = sorted(nutrient_sources[nutrient],key=lambda x: x[2], reverse=True)
         
         return nutrient_sources
     

@@ -38,11 +38,11 @@ class Plotter:
             bars = ax.bar(bar_labels, values, color=colors, width=0.6, 
                     edgecolor='gray', linewidth=0.5)
             
-            # Color code the actual value based on adequacy
-            if actual[nut] >= min_daily[nut]:
-                bars[1].set_color('#2ecc71')  # Green if meeting minimum
-            else:
-                bars[1].set_color('#e74c3c')  # Red if below minimum
+            # # Color code the actual value based on adequacy
+            # if actual[nut] >= min_daily[nut]:
+            #     bars[1].set_color('#2ecc71')  # Green if meeting minimum
+            # else:
+            #     bars[1].set_color('#e74c3c')  # Red if below minimum
             
             # Add value labels on bars
             for j, bar in enumerate(bars):

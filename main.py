@@ -201,20 +201,25 @@ def print_results(algorithm: str, best_solution: List[float], best_fitness: floa
     # Nutrient summary
     print("\nDaily Nutrient Summary:")
     print("-"*80)
-    print(f"{'Nutrient':^12} | {'Required':^10} | {'Actual':^10} | {'Optimal':^10} | {'% of Req':^10} | {'Status':^10}")
+    print(f"{'Nutrient':^12} | {'Required':^10} | {'Actual':^10} | {'Optimal':^10} | {'% of Req':^10}")
     print("-"*80)
     
+    directions = {
+            'calories': 'min',
+            'fat':      'min',
+            'carbs':    'min',
+            'protein':  'max',
+            'fiber':    'max',
+            'calcium':  'max',
+            'iron':     'max',
+        }
     for nut, actual in nutrient_totals.items():
         required = min_daily.get(nut, 0)
         optimal = optimal_daily.get(nut, required)
         pct_req = (actual / required) * 100 if required > 0 else 0
+        dir = directions[nut]
         
-        if actual >= required:
-            status = "✓ GOOD"
-        else:
-            status = "✗ LOW"
-        
-        print(f"{nut.capitalize():12} | {required:10.1f} | {actual:10.1f} | {optimal:10.1f} | {pct_req:9.1f}% | {status:10}")
+        print(f"{nut.capitalize():12} | {required:10.1f} | {actual:10.1f} | {optimal:10.1f} | {pct_req:9.1f}%")
     
     # Food basket summary
     print("\nOptimal Food Basket (Monthly):")
@@ -313,15 +318,15 @@ Algorithm Information:
     
     # SA arguments
     sa_group = parser.add_argument_group('Simulated Annealing Options')
-    sa_group.add_argument('--iterations', type=int, default=900,
+    sa_group.add_argument('--iterations', type=int, default=800,
                          help='Maximum iterations for SA')
-    sa_group.add_argument('--temp', type=float, default=9000000.0,
+    sa_group.add_argument('--temp', type=float, default=10000.0,
                          help='Initial temperature for SA')
-    sa_group.add_argument('--final-temp', type=float, default=0.001,
+    sa_group.add_argument('--final-temp', type=float, default=0.1,
                          help='Final temperature for SA')
-    sa_group.add_argument('--cooling', type=float, default=0.9,
+    sa_group.add_argument('--cooling', type=float, default=0.95,
                          help='Cooling rate for SA')
-    sa_group.add_argument('--step-size', type=float, default=1.5,
+    sa_group.add_argument('--step-size', type=float, default=3,
                          help='Step size for SA (kg)')
     
     args = parser.parse_args()

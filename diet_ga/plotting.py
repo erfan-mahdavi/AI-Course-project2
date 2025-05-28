@@ -85,10 +85,10 @@ class Plotter:
             bars = ax.bar(bar_labels, values, color=colors, width=0.6, 
                     edgecolor='gray', linewidth=0.5)
             
-            if actual[nut] >= min_daily[nut]:
-                bars[1].set_color('#2ecc71')  # Green if satisfying constraint
-            else:
-                bars[1].set_color('#e74c3c')  # Red if not satisfying constraint
+            # if actual[nut] >= min_daily[nut]:
+            #     bars[1].set_color('#2ecc71')  # Green if satisfying constraint
+            # else:
+            #     bars[1].set_color('#e74c3c')  # Red if not satisfying constraint
             
             for j, bar in enumerate(bars):
                 height = bar.get_height()
