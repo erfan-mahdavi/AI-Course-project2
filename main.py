@@ -318,15 +318,15 @@ Algorithm Information:
     
     # SA arguments
     sa_group = parser.add_argument_group('Simulated Annealing Options')
-    sa_group.add_argument('--iterations', type=int, default=800,
+    sa_group.add_argument('--iterations', type=int, default=1000000,
                          help='Maximum iterations for SA')
-    sa_group.add_argument('--temp', type=float, default=10000.0,
+    sa_group.add_argument('--temp', type=float, default=1.0,
                          help='Initial temperature for SA')
-    sa_group.add_argument('--final-temp', type=float, default=0.1,
+    sa_group.add_argument('--final-temp', type=float, default=0.00000000001,
                          help='Final temperature for SA')
-    sa_group.add_argument('--cooling', type=float, default=0.95,
+    sa_group.add_argument('--cooling', type=float, default=0.9999,
                          help='Cooling rate for SA')
-    sa_group.add_argument('--step-size', type=float, default=3,
+    sa_group.add_argument('--step-size', type=float, default=1,
                          help='Step size for SA (kg)')
     
     args = parser.parse_args()

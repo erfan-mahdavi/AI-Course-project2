@@ -123,25 +123,25 @@ class SimulatedAnnealing:
         Check multiple stopping conditions and return whether to stop and why.
         """
         # Don't stop too early - allow at least 350 iterations
-        if iteration < 350:
+        if iteration < 1000:
             return False, ""
         
         # 1. Temperature-based stopping
-        if temperature < self.final_temp * 1.5:
+        if temperature < self.final_temp:
             return True, f"Temperature too low ({temperature:.6f})"
         
-        # 2. Very low acceptance rate for extended period
-        if iteration > 2000 and acceptance_rate < 1.0 and consecutive_no_accept > 500:
-            return True, f"Very low acceptance rate ({acceptance_rate:.1f}%) for {consecutive_no_accept} iterations"
+        # # 2. Very low acceptance rate for extended period
+        # if iteration > 2000 and acceptance_rate < 1.0 and consecutive_no_accept > 500:
+        #     return True, f"Very low acceptance rate ({acceptance_rate:.1f}%) for {consecutive_no_accept} iterations"
         
-        # 3. Long stagnation without improvement
-        iterations_since_improvement = iteration - last_improvement_iteration
-        if iterations_since_improvement > 3000 and iteration > 3000:
-            return True, f"No improvement for {iterations_since_improvement} iterations"
+        # # 3. Long stagnation without improvement
+        # iterations_since_improvement = iteration - last_improvement_iteration
+        # if iterations_since_improvement > 3000 and iteration > 3000:
+        #     return True, f"No improvement for {iterations_since_improvement} iterations"
         
-        # 4. Excessive stagnation counter
-        if stagnation_counter > 5000 and iteration > 5000:
-            return True, f"Excessive stagnation ({stagnation_counter} iterations)"
+        # # 4. Excessive stagnation counter
+        # if stagnation_counter > 5000 and iteration > 5000:
+        #     return True, f"Excessive stagnation ({stagnation_counter} iterations)"
         
         # 5. Convergence detection - check if best fitness is stable
         if len(self.best_fitness_history) > 2000 and iteration > 2000:
@@ -152,12 +152,12 @@ class SimulatedAnnealing:
             if fitness_variance < 0.01:  # Very small variance in fitness
                 return True, f"Converged - fitness variance: {fitness_variance:.6f}"
         
-        # 6. Check if we've reached a good enough solution
-        if self.best_fitness_history and iteration > 2000:
-            current_best = max(self.best_fitness_history)
-            # If fitness is positive and high, we might have found a good solution
-            if current_best > 100 and iterations_since_improvement > 2000:
-                return True, f"Good solution found (fitness: {current_best:.2f}) with no recent improvement"
+        # # 6. Check if we've reached a good enough solution
+        # if self.best_fitness_history and iteration > 2000:
+        #     current_best = max(self.best_fitness_history)
+        #     # If fitness is positive and high, we might have found a good solution
+        #     if current_best > 100 and iterations_since_improvement > 2000:
+        #         return True, f"Good solution found (fitness: {current_best:.2f}) with no recent improvement"
         
         return False, ""
 
