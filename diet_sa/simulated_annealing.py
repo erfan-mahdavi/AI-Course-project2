@@ -5,6 +5,7 @@ from .plotting import Plotter
 from typing import List, Dict, Tuple
 import math
 import random
+import numpy as np
 
 class SimulatedAnnealing:
     """
@@ -38,12 +39,12 @@ class SimulatedAnnealing:
         
         # Optimal targets - these are what Lili really wants for best health
         optimal_daily = {
-            'calories': 1700,   # Less calories for weight management 
-            'protein': 120,     # More protein for muscle strength
-            'fat': 45,          # Less fat for healthy diet
-            'carbs': 235,       # Less carbs to control sugar intake
+            'calories': 1900,   # Less calories for weight management 
+            'protein': 110,     # More protein for muscle strength
+            'fat': 50,          # Less fat for healthy diet
+            'carbs': 240,       # Less carbs to control sugar intake
             'fiber': 35,        # More fiber for digestion
-            'calcium': 1200,    # More calcium for strong bones
+            'calcium': 1100,    # More calcium for strong bones
             'iron': 25,         # More iron to prevent anemia
         }
         optimal = {nut: val * 30 for nut, val in optimal_daily.items()}
@@ -83,17 +84,11 @@ class SimulatedAnnealing:
         self.best_fitness_history = []
         
         self.plotter = Plotter()
-        self.print_food_summary()
-            
-    def print_food_summary(self):
-        """Print summary of available foods."""
-        print(f"\nLoaded {len(self.foods)} food items for optimization")
-        print(f"Budget cap: {self.cost_cap:,.0f} Toman")
-        print(f"Optimization target: Monthly diet for 30 days\n")
 
     def generate_initial_solution(self) -> Solution:
         """Generate smart initial solution."""
-        return Solution.random_solution(len(self.foods), self.evaluator)
+        s_initial = Solution([0.0]*len(self.foods), self.evaluator)
+        return s_initial.random_solution(len(self.foods), self.evaluator)
 
     def generate_neighbor(self, current_solution: Solution) -> Solution:
         """
@@ -103,7 +98,7 @@ class SimulatedAnnealing:
         deficient_nutrients = current_solution.get_deficient_nutrients()
         
         # Choose strategy based on current state
-        if current_cost >= self.cost_cap * 0.95:  # Near budget limit
+        if current_cost >= self.cost_cap * 0.98:  # Near budget limit
             return current_solution._reduce_cost_neighbor(self.foods.copy(), self.step_size)
         elif len(deficient_nutrients) > 0:  # Has deficiencies
             return current_solution.perturb_focused(deficient_nutrients, self.step_size)
@@ -115,7 +110,7 @@ class SimulatedAnnealing:
         if new_fitness > current_fitness:
             return 1.0  # Always accept better solutions
         
-        if temperature <= 0:
+        if temperature <= self.final_temp:
             return 0.0
         
         delta = new_fitness - current_fitness
@@ -127,7 +122,7 @@ class SimulatedAnnealing:
         """
         Check multiple stopping conditions and return whether to stop and why.
         """
-        # Don't stop too early - allow at least 1000 iterations
+        # Don't stop too early - allow at least 350 iterations
         if iteration < 350:
             return False, ""
         
@@ -152,7 +147,7 @@ class SimulatedAnnealing:
         if len(self.best_fitness_history) > 2000 and iteration > 2000:
             recent_window = min(1000, len(self.best_fitness_history))
             recent_best = self.best_fitness_history[-recent_window:]
-            fitness_variance = max(recent_best) - min(recent_best)
+            fitness_variance = np.var(recent_best)
             
             if fitness_variance < 0.01:  # Very small variance in fitness
                 return True, f"Converged - fitness variance: {fitness_variance:.6f}"
@@ -216,7 +211,7 @@ class SimulatedAnnealing:
             total_moves += 1
             
             # Accept or reject
-            if random.uniform(0,1) < accept_prob:
+            if random.uniform(0,1) <= accept_prob:
                 current_solution = neighbor
                 accepted_moves += 1
                 consecutive_no_accept = 0
@@ -245,7 +240,7 @@ class SimulatedAnnealing:
             self.cost_history.append(cost)
             
             # Calculate acceptance rate
-            acceptance_rate = (accepted_moves / total_moves) * 100 if total_moves > 0 else 0
+            acceptance_rate = ((accepted_moves * 100) / total_moves)  if total_moves > 0 else 0
             
             # Print progress
             if iteration % 1000 == 0 or iteration == self.max_iterations - 1:
