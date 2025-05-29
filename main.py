@@ -201,7 +201,7 @@ def print_results(algorithm: str, best_solution: List[float], best_fitness: floa
     # Nutrient summary
     print("\nDaily Nutrient Summary:")
     print("-"*80)
-    print(f"{'Nutrient':^12} | {'Required':^10} | {'Actual':^10} | {'Optimal':^10} | {'% of Req':^10}")
+    print(f"{'Nutrient':^12} | {'Required':^10} | {'Actual':^10} | {'Optimal':^10} | {'% of Req':^10} | {'% of dis':^10}")
     print("-"*80)
     
     directions = {
@@ -213,13 +213,15 @@ def print_results(algorithm: str, best_solution: List[float], best_fitness: floa
             'calcium':  'max',
             'iron':     'max',
         }
+    dis = 0
     for nut, actual in nutrient_totals.items():
         required = min_daily.get(nut, 0)
         optimal = optimal_daily.get(nut, required)
         pct_req = (actual / required) * 100 if required > 0 else 0
+        dis = (abs(actual-required) / required) * 100 if required > 0 else 0
         dir = directions[nut]
         
-        print(f"{nut.capitalize():12} | {required:10.1f} | {actual:10.1f} | {optimal:10.1f} | {pct_req:9.1f}%")
+        print(f"{nut.capitalize():12} | {required:10.1f} | {actual:10.1f} | {optimal:10.1f} | {pct_req:9.1f}% | {dis:9.1f}%")
     
     # Food basket summary
     print("\nOptimal Food Basket (Monthly):")
