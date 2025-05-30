@@ -67,7 +67,7 @@ class SimulatedAnnealing:
                 'protein': 1.23, #2-5
                 'fat': 1.2,
                 'carbs': 1.2,     
-                'fiber': 1.11,  #5-7
+                'fiber': 1.2,  #5-7
                 'calcium': 1.3,
                 'iron': 1.2,
             }
@@ -95,7 +95,7 @@ class SimulatedAnnealing:
         self.cost_history = []
         self.best_fitness_history = []
         
-        self.plotter = Plotter()
+        # self.plotter = Plotter()
 
     def generate_initial_solution(self) -> Solution:
         """Generate smart initial solution."""
