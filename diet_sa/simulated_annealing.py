@@ -67,7 +67,7 @@ class SimulatedAnnealing:
                 'protein': 1.23, #2-5
                 'fat': 1.2,
                 'carbs': 1.2,     
-                'fiber': 1.222,  #5-7
+                'fiber': 1.11,  #5-7
                 'calcium': 1.3,
                 'iron': 1.2,
             }
